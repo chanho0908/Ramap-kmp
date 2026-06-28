@@ -1,0 +1,39 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Create dummy local.properties
+      run: |
+        echo "supabase.url=https://placeholder.supabase.co" >> local.properties
+        echo "supabase.anon_key=placeholder-key" >> local.properties
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Lint Check
+      run: ./gradlew ktlintCheck
+
+    - name: Unit Tests
+      run: ./gradlew test
+
+    - name: Build Android App
+      run: ./gradlew :androidApp:assembleDebug
