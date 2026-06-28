@@ -11,13 +11,18 @@ plugins {
     alias(libs.plugins.ktlint) apply false
 }
 
-subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+allprojects {
+    apply(
+        plugin =
+            rootProject.libs.plugins.ktlint
+                .get()
+                .pluginId,
+    )
 
     configure<KtlintExtension> {
         filter {
-            exclude("**/generated/**")
-            exclude("**/build/**")
+            exclude { it.file.path.contains("/build/") }
+            exclude { it.file.path.contains("/generated/") }
         }
     }
 }
