@@ -4,7 +4,7 @@
 
 ## 1. 커밋 메시지 구조
 ```
-<type>(<scope>): <subject>
+<type>: <subject>
 
 <body> (선택 사항)
 
