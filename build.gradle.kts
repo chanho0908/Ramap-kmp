@@ -17,6 +17,7 @@ subprojects {
     configure<KtlintExtension> {
         filter {
             exclude("**/generated/**")
+            exclude("**/build/**")
         }
     }
 }
