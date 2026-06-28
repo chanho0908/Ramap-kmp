@@ -5,9 +5,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 class SampleRepository {
-    fun fetchData(): Flow<String> = flow {
-        emit("Loading")
-        delay(100)
-        emit("Success")
-    }
+    fun fetchData(): Flow<String> =
+        flow {
+            emit("Loading")
+            delay(100)
+            emit("Success")
+        }
 }

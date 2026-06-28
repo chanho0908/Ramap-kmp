@@ -9,13 +9,14 @@ import kotlin.test.Test
 class SampleUiTest {
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testSampleUi() = runComposeUiTest {
-        setContent {
-            SampleUi()
-        }
+    fun testSampleUi() =
+        runComposeUiTest {
+            setContent {
+                SampleUi()
+            }
 
-        onNodeWithText("Initial").assertExists()
-        onNodeWithText("Initial").performClick()
-        onNodeWithText("Clicked").assertExists()
-    }
+            onNodeWithText("Initial").assertExists()
+            onNodeWithText("Initial").performClick()
+            onNodeWithText("Clicked").assertExists()
+        }
 }

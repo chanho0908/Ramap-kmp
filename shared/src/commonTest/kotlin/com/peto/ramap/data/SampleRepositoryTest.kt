@@ -9,11 +9,12 @@ class SampleRepositoryTest {
     private val repository = SampleRepository()
 
     @Test
-    fun testFetchData() = runTest {
-        repository.fetchData().test {
-            assertEquals("Loading", awaitItem())
-            assertEquals("Success", awaitItem())
-            awaitComplete()
+    fun testFetchData() =
+        runTest {
+            repository.fetchData().test {
+                assertEquals("Loading", awaitItem())
+                assertEquals("Success", awaitItem())
+                awaitComplete()
+            }
         }
-    }
 }

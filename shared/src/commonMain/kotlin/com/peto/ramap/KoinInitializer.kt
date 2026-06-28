@@ -1,4 +1,3 @@
 package com.peto.ramap
 
-class KoinInitializer {
-}
+class KoinInitializer
