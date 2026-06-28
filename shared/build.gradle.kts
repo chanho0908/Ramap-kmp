@@ -26,12 +26,12 @@ buildkonfig {
         buildConfigField(
             com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
             "SUPABASE_URL",
-            localProperties.getProperty("supabase.url") ?: "",
+            System.getenv("SUPABASE_URL") ?: localProperties.getProperty("supabase.url") ?: "",
         )
         buildConfigField(
             com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
             "SUPABASE_ANON_KEY",
-            localProperties.getProperty("supabase.anon_key") ?: "",
+            System.getenv("SUPABASE_ANON_KEY") ?: localProperties.getProperty("supabase.anon_key") ?: "",
         )
     }
 }
