@@ -1,32 +1,32 @@
 ---
-name: Bug Report
-about: Create a report to help us improve
+name: 버그 리포트 (Bug Report)
+about: 프로젝트 개선을 위해 버그를 제보해주세요
 title: '[BUG] '
 labels: bug
 assignees: ''
 
 ---
 
-## 🐛 Bug Description
-A clear and concise description of what the bug is.
+## 🐛 버그 설명
+발생한 버그에 대해 간결하고 명확하게 설명해주세요.
 
-## 📋 Steps to Reproduce
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## 📋 재현 방법
+버그를 재현하기 위한 단계를 순서대로 적어주세요:
+1. '...' 화면으로 이동합니다.
+2. '....' 버튼을 클릭합니다.
+3. '....' 영역으로 스크롤합니다.
+4. 에러가 발생합니다.
 
-## Expected Behavior
-A clear and concise description of what you expected to happen.
+## 예상 결과
+정상적인 경우 어떤 결과가 나와야 하는지 설명해주세요.
 
-## 📸 Screenshots / Screen Recording
-If applicable, add screenshots or a screen recording to help explain your problem.
+## 📸 스크린샷 / 화면 녹화
+해당 문제와 관련된 스크린샷이나 화면 녹화 영상이 있다면 첨부해주세요.
 
-## 📱 Device Information
-- Device: [e.g. Pixel 6, iPhone 13]
-- OS: [e.g. Android 13, iOS 16]
-- App Version: [e.g. 1.0.0]
+## 📱 기기 정보
+- 기기명: [예: Pixel 6, iPhone 13]
+- OS 버전: [예: Android 13, iOS 16]
+- 앱 버전: [예: 1.0.0]
 
-## 🔍 Additional Context
-Add any other context about the problem here.
+## 🔍 추가 정보
+문제와 관련하여 참고할 만한 추가적인 내용이 있다면 적어주세요.
