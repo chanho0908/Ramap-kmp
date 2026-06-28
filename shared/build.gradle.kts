@@ -1,5 +1,24 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+
+val localProperties =
+    Properties().apply {
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use(::load)
+        }
+    }
+
+fun secretProperty(
+    localName: String,
+    envName: String,
+): String =
+    providers
+        .gradleProperty(localName)
+        .orElse(providers.environmentVariable(envName))
+        .orNull
+        ?: localProperties.getProperty(localName).orEmpty()
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -8,15 +27,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.buildkonfig)
+    kotlin("native.cocoapods")
 }
-
-val localProperties =
-    Properties().apply {
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localPropertiesFile.inputStream().use { load(it) }
-        }
-    }
 
 buildkonfig {
     packageName = "com.peto.ramap.shared"
@@ -24,19 +36,49 @@ buildkonfig {
 
     defaultConfigs {
         buildConfigField(
-            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            STRING,
             "SUPABASE_URL",
-            localProperties.getProperty("supabase.url") ?: "",
+            secretProperty(
+                localName = "supabase.url",
+                envName = "SUPABASE_URL",
+            ),
         )
         buildConfigField(
-            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            STRING,
             "SUPABASE_ANON_KEY",
-            localProperties.getProperty("supabase.anon_key") ?: "",
+            secretProperty(
+                localName = "supabase.anon_key",
+                envName = "SUPABASE_ANON_KEY",
+            ),
+        )
+        buildConfigField(
+            STRING,
+            "KAKAO_NATIVE_APP_KEY",
+            secretProperty(
+                localName = "kakao_native_app_key",
+                envName = "KAKAO_NATIVE_APP_KEY",
+            ),
         )
     }
 }
 
 kotlin {
+    cocoapods {
+        summary = "Shared module for Ramap"
+        homepage = "https://github.com/chanho0908/Ramap-kmp"
+        version = "1.0.0"
+        ios.deploymentTarget = "13.0"
+
+        framework {
+            baseName = "Shared"
+            isStatic = true
+        }
+
+        pod("KakaoMapsSDK") {
+            version = "2.12.14"
+        }
+    }
+
     listOf(
         iosArm64(),
         iosSimulatorArm64(),
@@ -73,6 +115,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.kakao.map)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

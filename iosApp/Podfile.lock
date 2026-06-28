@@ -1,0 +1,23 @@
+PODS:
+  - KakaoMapsSDK (2.12.14)
+  - shared (1.0.0):
+    - KakaoMapsSDK (= 2.12.14)
+
+DEPENDENCIES:
+  - shared (from `../shared`)
+
+SPEC REPOS:
+  trunk:
+    - KakaoMapsSDK
+
+EXTERNAL SOURCES:
+  shared:
+    :path: "../shared"
+
+SPEC CHECKSUMS:
+  KakaoMapsSDK: 047759200ac9e14254fc2227269006bf056253b7
+  shared: fd1b0c1a95ba5b80ce74edc3f94b05d894eafa6f
+
+PODFILE CHECKSUM: ce1460fcad808afcb8796ab7cc23c737ed389d1e
+
+COCOAPODS: 1.16.2
