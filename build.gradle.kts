@@ -1,3 +1,5 @@
+import org.jlleitschuh.gradle.ktlint.KtlintExtension
+
 plugins {
     // this is necessary to avoid the plugins to be loaded multiple times
     // in each subproject's classloader
@@ -10,6 +12,18 @@ plugins {
     alias(libs.plugins.buildkonfig) apply false
 }
 
-subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+allprojects {
+    apply(
+        plugin =
+            rootProject.libs.plugins.ktlint
+                .get()
+                .pluginId,
+    )
+
+    configure<KtlintExtension> {
+        filter {
+            exclude { it.file.path.contains("/build/") }
+            exclude { it.file.path.contains("/generated/") }
+        }
+    }
 }
