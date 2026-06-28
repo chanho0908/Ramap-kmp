@@ -13,6 +13,7 @@ kotlin {
 }
 dependencies {
     implementation(projects.shared)
+    implementation(libs.kakao.map)
     implementation(libs.koin.android)
 
     implementation(libs.androidx.activity.compose)

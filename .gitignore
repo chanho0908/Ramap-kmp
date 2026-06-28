@@ -10,6 +10,9 @@ local.properties
 captures
 .externalNativeBuild
 .cxx
+.codex
+.agents
+.artifacts
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
@@ -17,4 +20,6 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+iosApp/Pods/
 docs/
+AGENTS.md
