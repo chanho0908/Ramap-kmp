@@ -42,6 +42,7 @@ import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.LabelTextBuilder
 import com.kakao.vectormap.label.LabelTextStyle
+import com.peto.ramap.core.config.RamenShopMarkerConfig
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
@@ -101,13 +102,6 @@ actual fun KakaoMapView(
     )
 }
 
-private const val RAMEN_SHOP_MARKER_STYLE_ID = "ramen-shop-marker-style"
-private const val RAMEN_SHOP_MARKER_WIDTH = 28
-private const val RAMEN_SHOP_MARKER_HEIGHT = 34
-private const val RAMEN_SHOP_LABEL_TEXT_SIZE = 22
-private const val RAMEN_SHOP_LABEL_TEXT_COLOR = 0xFF333333.toInt()
-private const val RAMEN_SHOP_LABEL_STROKE_WIDTH = 4
-
 @Composable
 private fun rememberRamenShopMarkerBitmap(): Bitmap {
     val density = LocalDensity.current
@@ -116,8 +110,8 @@ private fun rememberRamenShopMarkerBitmap(): Bitmap {
     return remember(markerPainter, density) {
         markerPainter.toBitmap(
             density = density,
-            width = RAMEN_SHOP_MARKER_WIDTH,
-            height = RAMEN_SHOP_MARKER_HEIGHT,
+            width = RamenShopMarkerConfig.WIDTH,
+            height = RamenShopMarkerConfig.HEIGHT,
         )
     }
 }
@@ -341,18 +335,18 @@ private fun createRamenShopMarkerStyles(
     manager: LabelManager,
     markerBitmap: Bitmap,
 ): LabelStyles? =
-    manager.getLabelStyles(RAMEN_SHOP_MARKER_STYLE_ID)
+    manager.getLabelStyles(RamenShopMarkerConfig.STYLE_ID)
         ?: manager.addLabelStyles(
             LabelStyles.from(
-                RAMEN_SHOP_MARKER_STYLE_ID,
+                RamenShopMarkerConfig.STYLE_ID,
                 LabelStyle
                     .from(markerBitmap)
                     .setAnchorPoint(0.5f, 1.0f)
                     .setTextStyles(
                         LabelTextStyle.from(
-                            RAMEN_SHOP_LABEL_TEXT_SIZE,
-                            RAMEN_SHOP_LABEL_TEXT_COLOR,
-                            RAMEN_SHOP_LABEL_STROKE_WIDTH,
+                            RamenShopMarkerConfig.LABEL_TEXT_SIZE,
+                            RamenShopMarkerConfig.LABEL_TEXT_COLOR,
+                            RamenShopMarkerConfig.LABEL_STROKE_WIDTH,
                             Color.WHITE,
                         ),
                     ),
