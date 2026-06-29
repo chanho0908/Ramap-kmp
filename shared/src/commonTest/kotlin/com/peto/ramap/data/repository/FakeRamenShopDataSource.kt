@@ -10,9 +10,11 @@ class FakeRamenShopDataSource(
 ) : RamenShopDataSource {
     var requestedBounds: MapBounds? = null
         private set
+    val requestedBoundsHistory = mutableListOf<MapBounds>()
 
     override suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse> {
         requestedBounds = bounds
+        requestedBoundsHistory += bounds
         error?.let { throw it }
         return responses
     }
