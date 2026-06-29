@@ -2,7 +2,7 @@ package com.peto.ramap
 
 import android.app.Application
 import com.kakao.vectormap.KakaoMapSdk
-import com.peto.ramap.config.RamapAppConfig
+import com.peto.ramap.core.config.RamapAppConfig
 import com.peto.ramap.di.initKoin
 import org.koin.android.ext.koin.androidContext
 

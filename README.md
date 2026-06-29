@@ -26,6 +26,13 @@ Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
 - Android tests: `./gradlew :shared:testAndroidHostTest`
 - iOS tests: `./gradlew :shared:iosSimulatorArm64Test`
 
+### Commit rules
+
+Commits must be split by small work units. Do not combine dependency/build setup, file moves, base architecture,
+feature behavior, platform permission logic, tests, and formatting in one broad commit unless they are truly inseparable.
+When a diff spans multiple purposes, stage and commit each purpose separately so review and rollback can target one
+logical change at a time.
+
 ---
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…# Ramap-kmp
