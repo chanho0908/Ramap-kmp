@@ -1,4 +1,4 @@
-package com.peto.ramap.config
+package com.peto.ramap.core.config
 
 import com.peto.ramap.shared.RamapConfig
 
