@@ -36,16 +36,16 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.cValue
-import kotlinx.cinterop.useContents
 import kotlinx.cinterop.readValue
+import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectZero
-import platform.darwin.NSObject
-import platform.darwin.dispatch_async
-import platform.darwin.dispatch_get_main_queue
 import platform.UIKit.UIColor
 import platform.UIKit.UIImage
 import platform.UIKit.UIView
+import platform.darwin.NSObject
+import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_main_queue
 
 private const val DEFAULT_APP_NAME = "openmap"
 private const val DEFAULT_VIEW_INFO_NAME = "map"
@@ -325,7 +325,6 @@ private class IosKakaoMapController(
             blue = MARKER_TEXT_BLUE,
             alpha = 1.0,
         )
-
 }
 
 @OptIn(ExperimentalForeignApi::class)
