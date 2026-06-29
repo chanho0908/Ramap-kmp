@@ -76,7 +76,7 @@ class DefaultRamenShopRepositoryTest {
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",
                     ),
-                ),
+                ).associateBy { it.id },
                 result.value,
             )
         }
@@ -91,7 +91,7 @@ class DefaultRamenShopRepositoryTest {
 
             val result = repository.fetchRamenShops(BOUNDS_FIXTURE)
 
-            assertEquals(emptyList(), result.value)
+            assertEquals(emptyMap(), result.value)
         }
 
     @Test

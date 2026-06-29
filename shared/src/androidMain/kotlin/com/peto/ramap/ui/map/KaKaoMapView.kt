@@ -36,12 +36,14 @@ import com.kakao.vectormap.LatLng
 import com.kakao.vectormap.MapLifeCycleCallback
 import com.kakao.vectormap.MapView
 import com.kakao.vectormap.camera.CameraUpdateFactory
+import com.kakao.vectormap.label.LabelManager
 import com.kakao.vectormap.label.LabelOptions
 import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.LabelTextBuilder
 import com.kakao.vectormap.label.LabelTextStyle
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.extension.hasLocationPermission
 import org.jetbrains.compose.resources.painterResource
@@ -56,34 +58,42 @@ actual fun KakaoMapView(
     modifier: Modifier,
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+
     val mapView = remember { MapView(context) }
     val isMapStarted = remember { AtomicBoolean(false) }
     val kakaoMapState = remember { mutableStateOf<KakaoMap?>(null) }
-    val markerBitmap = rememberRamenShopMarkerBitmap()
-    val locationPermissionLauncher = rememberLocationPermissionLauncher(kakaoMapState, context)
 
-    SyncRamenShopMarkers(
+    val markerBitmap = rememberRamenShopMarkerBitmap()
+    val locationPermissionLauncher =
+        rememberKakaoMapLocationPermissionLauncher(
+            kakaoMapState = kakaoMapState,
+            context = context,
+        )
+
+    BindMapViewLifecycle(
+        mapView = mapView,
+        isMapStarted = isMapStarted,
+        lifecycle = lifecycle,
+    )
+
+    renderRamenShopMarkers(
         kakaoMap = kakaoMapState.value,
         markerBitmap = markerBitmap,
         shops = shops,
     )
 
-    BindMapViewLifecycle(
-        mapView = mapView,
-        isMapStarted = isMapStarted,
-        lifecycle = lifecycleOwner.lifecycle,
-    )
-
     AndroidView(
         modifier = modifier,
         factory = {
-            mapView.startMapIfNeeded(
+            mapView.startIfNeeded(
                 isMapStarted = isMapStarted,
-                lifecycle = lifecycleOwner.lifecycle,
+                lifecycle = lifecycle,
                 context = context,
                 locationPermissionLauncher = locationPermissionLauncher,
-                onMapReady = { kakaoMapState.value = it },
+                onMapReady = { kakaoMap ->
+                    kakaoMapState.value = kakaoMap
+                },
                 onBoundsChanged = onBoundsChanged,
             )
             mapView
@@ -91,17 +101,12 @@ actual fun KakaoMapView(
     )
 }
 
-private val LOCATION_PERMISSIONS =
-    arrayOf(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-    )
-
 private const val RAMEN_SHOP_MARKER_STYLE_ID = "ramen-shop-marker-style"
-private const val RAMEN_SHOP_MARKER_WIDTH = 40
-private const val RAMEN_SHOP_MARKER_HEIGHT = 46
+private const val RAMEN_SHOP_MARKER_WIDTH = 28
+private const val RAMEN_SHOP_MARKER_HEIGHT = 34
 private const val RAMEN_SHOP_LABEL_TEXT_SIZE = 22
 private const val RAMEN_SHOP_LABEL_TEXT_COLOR = 0xFF333333.toInt()
+private const val RAMEN_SHOP_LABEL_STROKE_WIDTH = 4
 
 @Composable
 private fun rememberRamenShopMarkerBitmap(): Bitmap {
@@ -118,31 +123,17 @@ private fun rememberRamenShopMarkerBitmap(): Bitmap {
 }
 
 @Composable
-private fun rememberLocationPermissionLauncher(
+private fun rememberKakaoMapLocationPermissionLauncher(
     kakaoMapState: MutableState<KakaoMap?>,
     context: Context,
 ): ActivityResultLauncher<Array<String>> =
     rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
         if (permissions.isLocationGranted()) {
             kakaoMapState.value?.moveToLastKnownLocation(context)
         }
     }
-
-@Composable
-private fun SyncRamenShopMarkers(
-    kakaoMap: KakaoMap?,
-    markerBitmap: Bitmap,
-    shops: RamenShops,
-) {
-    LaunchedEffect(kakaoMap, markerBitmap, shops) {
-        kakaoMap?.renderRamenShopMarkers(
-            markerBitmap = markerBitmap,
-            shops = shops,
-        )
-    }
-}
 
 @Composable
 private fun BindMapViewLifecycle(
@@ -155,14 +146,21 @@ private fun BindMapViewLifecycle(
             LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_RESUME -> {
-                        if (isMapStarted.get()) mapView.resume()
+                        if (isMapStarted.get()) {
+                            mapView.resume()
+                        }
                     }
 
                     Lifecycle.Event.ON_PAUSE -> {
-                        if (isMapStarted.get()) mapView.pause()
+                        if (isMapStarted.get()) {
+                            mapView.pause()
+                        }
                     }
 
-                    Lifecycle.Event.ON_DESTROY -> mapView.finish()
+                    Lifecycle.Event.ON_DESTROY -> {
+                        mapView.finish()
+                    }
+
                     else -> Unit
                 }
             }
@@ -177,7 +175,24 @@ private fun BindMapViewLifecycle(
     }
 }
 
-private fun MapView.startMapIfNeeded(
+@Composable
+private fun renderRamenShopMarkers(
+    kakaoMap: KakaoMap?,
+    markerBitmap: Bitmap,
+    shops: RamenShops,
+) {
+    val renderedShopIds = remember { mutableSetOf<String>() }
+
+    LaunchedEffect(kakaoMap, markerBitmap, shops) {
+        kakaoMap?.renderNewRamenShopMarkers(
+            markerBitmap = markerBitmap,
+            shops = shops,
+            renderedShopIds = renderedShopIds,
+        )
+    }
+}
+
+private fun MapView.startIfNeeded(
     isMapStarted: AtomicBoolean,
     lifecycle: Lifecycle,
     context: Context,
@@ -189,25 +204,26 @@ private fun MapView.startMapIfNeeded(
 
     start(
         object : MapLifeCycleCallback() {
-            override fun onMapDestroy() {
-            }
+            override fun onMapDestroy() = Unit
 
-            override fun onMapError(error: Exception) {
-            }
+            override fun onMapError(error: Exception) = Unit
         },
         object : KakaoMapReadyCallback() {
             override fun onMapReady(kakaoMap: KakaoMap) {
                 onMapReady(kakaoMap)
-                kakaoMap.bindBoundsChanges(
-                    mapView = this@startMapIfNeeded,
+
+                kakaoMap.bindBoundsChangedListener(
+                    mapView = this@startIfNeeded,
                     onBoundsChanged = onBoundsChanged,
                 )
+
                 post {
-                    notifyBoundsChanged(
+                    notifyCurrentBounds(
                         kakaoMap = kakaoMap,
                         onBoundsChanged = onBoundsChanged,
                     )
                 }
+
                 kakaoMap.moveToLastKnownLocationOrRequestPermission(
                     context = context,
                     locationPermissionLauncher = locationPermissionLauncher,
@@ -221,16 +237,51 @@ private fun MapView.startMapIfNeeded(
     }
 }
 
-private fun KakaoMap.bindBoundsChanges(
+private fun KakaoMap.bindBoundsChangedListener(
     mapView: MapView,
     onBoundsChanged: (MapBounds) -> Unit,
 ) {
     setOnCameraMoveEndListener { map, _, _ ->
-        mapView.notifyBoundsChanged(
+        mapView.notifyCurrentBounds(
             kakaoMap = map,
             onBoundsChanged = onBoundsChanged,
         )
     }
+}
+
+private fun MapView.notifyCurrentBounds(
+    kakaoMap: KakaoMap,
+    onBoundsChanged: (MapBounds) -> Unit,
+) {
+    kakaoMap
+        .currentMapBounds(
+            width = width,
+            height = height,
+        )?.let(onBoundsChanged)
+}
+
+private fun KakaoMap.currentMapBounds(
+    width: Int,
+    height: Int,
+): MapBounds? {
+    if (width <= 0 || height <= 0) return null
+
+    val screenPoints =
+        listOfNotNull(
+            fromScreenPoint(0, 0),
+            fromScreenPoint(width, 0),
+            fromScreenPoint(0, height),
+            fromScreenPoint(width, height),
+        )
+
+    if (screenPoints.size < 4) return null
+
+    return MapBounds(
+        minLat = screenPoints.minOf { it.latitude },
+        maxLat = screenPoints.maxOf { it.latitude },
+        minLng = screenPoints.minOf { it.longitude },
+        maxLng = screenPoints.maxOf { it.longitude },
+    )
 }
 
 private fun KakaoMap.moveToLastKnownLocationOrRequestPermission(
@@ -240,49 +291,18 @@ private fun KakaoMap.moveToLastKnownLocationOrRequestPermission(
     if (context.hasLocationPermission()) {
         moveToLastKnownLocation(context)
     } else {
-        locationPermissionLauncher.launch(LOCATION_PERMISSIONS)
-    }
-}
-
-private fun MapView.notifyBoundsChanged(
-    kakaoMap: KakaoMap,
-    onBoundsChanged: (MapBounds) -> Unit,
-) {
-    val bounds =
-        kakaoMap.currentMapBounds(
-            width = width,
-            height = height,
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ),
         )
-    if (bounds != null) {
-        onBoundsChanged(bounds)
     }
-}
-
-private fun KakaoMap.currentMapBounds(
-    width: Int,
-    height: Int,
-): MapBounds? {
-    if (width <= 0 || height <= 0) return null
-
-    val points =
-        listOfNotNull(
-            fromScreenPoint(0, 0),
-            fromScreenPoint(width, 0),
-            fromScreenPoint(0, height),
-            fromScreenPoint(width, height),
-        )
-    if (points.size < 4) return null
-
-    return MapBounds(
-        minLat = points.minOf { it.latitude },
-        maxLat = points.maxOf { it.latitude },
-        minLng = points.minOf { it.longitude },
-        maxLng = points.maxOf { it.longitude },
-    )
 }
 
 private fun KakaoMap.moveToLastKnownLocation(context: Context) {
-    val location = context.lastKnownLocation() ?: return
+    val location = lastKnownLocation(context) ?: return
+
     moveCamera(
         CameraUpdateFactory.newCenterPosition(
             LatLng.from(
@@ -293,58 +313,67 @@ private fun KakaoMap.moveToLastKnownLocation(context: Context) {
     )
 }
 
-private fun KakaoMap.renderRamenShopMarkers(
+private fun KakaoMap.renderNewRamenShopMarkers(
     markerBitmap: Bitmap,
     shops: RamenShops,
+    renderedShopIds: MutableSet<String>,
 ) {
-    val manager = labelManager ?: return
-    val labelLayer = manager.layer ?: return
-
-    labelLayer.removeAll()
-
     if (shops.value.isEmpty()) return
 
-    val markerStyles =
-        manager.getLabelStyles(RAMEN_SHOP_MARKER_STYLE_ID)
-            ?: manager.addLabelStyles(
-                LabelStyles.from(
-                    RAMEN_SHOP_MARKER_STYLE_ID,
-                    LabelStyle
-                        .from(markerBitmap)
-                        .setAnchorPoint(0.5f, 1.0f)
-                        .setTextStyles(
-                            LabelTextStyle.from(
-                                RAMEN_SHOP_LABEL_TEXT_SIZE,
-                                RAMEN_SHOP_LABEL_TEXT_COLOR,
-                                4,
-                                Color.WHITE,
-                            ),
-                        ),
-                ),
-            )
+    val manager = labelManager ?: return
+    val labelLayer = manager.layer ?: return
+    val markerStyles = createRamenShopMarkerStyles(manager, markerBitmap)
+
+    val newShops = shops.filterNotContainShops(renderedShopIds)
+
+    if (newShops.isEmpty()) return
 
     val labelOptions =
-        shops.value.map { shop ->
-            val position =
-                LatLng.from(
-                    shop.location.lat,
-                    shop.location.lng,
-                )
-            val labelOptions =
-                LabelOptions.from(
-                    "ramen-shop-${shop.id}",
-                    position,
-                )
-
-            labelOptions
-                .setStyles(markerStyles)
-                .setTexts(
-                    LabelTextBuilder().setTexts(shop.name),
-                )
+        newShops.mapNotNull { shop ->
+            markerStyles?.let { styles -> labelOptions(shop, styles) }
         }
 
     labelLayer.addLabels(labelOptions)
+    renderedShopIds.addAll(newShops.map { it.id })
 }
+
+private fun createRamenShopMarkerStyles(
+    manager: LabelManager,
+    markerBitmap: Bitmap,
+): LabelStyles? =
+    manager.getLabelStyles(RAMEN_SHOP_MARKER_STYLE_ID)
+        ?: manager.addLabelStyles(
+            LabelStyles.from(
+                RAMEN_SHOP_MARKER_STYLE_ID,
+                LabelStyle
+                    .from(markerBitmap)
+                    .setAnchorPoint(0.5f, 1.0f)
+                    .setTextStyles(
+                        LabelTextStyle.from(
+                            RAMEN_SHOP_LABEL_TEXT_SIZE,
+                            RAMEN_SHOP_LABEL_TEXT_COLOR,
+                            RAMEN_SHOP_LABEL_STROKE_WIDTH,
+                            Color.WHITE,
+                        ),
+                    ),
+            ),
+        )
+
+private fun labelOptions(
+    shop: RamenShop,
+    markerStyles: LabelStyles,
+): LabelOptions =
+    LabelOptions
+        .from(
+            "ramen-shop-${shop.id}",
+            LatLng.from(
+                shop.location.lat,
+                shop.location.lng,
+            ),
+        ).setStyles(markerStyles)
+        .setTexts(
+            LabelTextBuilder().setTexts(shop.name),
+        )
 
 private fun Painter.toBitmap(
     density: Density,
@@ -357,24 +386,21 @@ private fun Painter.toBitmap(
             (height * density.density).toInt(),
             Bitmap.Config.ARGB_8888,
         )
+
     val imageBitmap = bitmap.asImageBitmap()
     val canvas = Canvas(imageBitmap)
-
-    val size =
-        Size(
-            imageBitmap.width.toFloat(),
-            imageBitmap.height.toFloat(),
-        )
 
     CanvasDrawScope().draw(
         density = density,
         layoutDirection = LayoutDirection.Ltr,
         canvas = canvas,
-        size = size,
+        size =
+            Size(
+                imageBitmap.width.toFloat(),
+                imageBitmap.height.toFloat(),
+            ),
     ) {
-        draw(
-            size = this.size,
-        )
+        draw(size = size)
     }
 
     return bitmap
@@ -385,17 +411,13 @@ private fun Map<String, Boolean>.isLocationGranted(): Boolean =
         this[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
 @SuppressLint("MissingPermission")
-private fun Context.lastKnownLocation(): Location? {
-    if (!hasLocationPermission()) return null
+private fun lastKnownLocation(context: Context): Location? {
+    if (!context.hasLocationPermission()) return null
 
-    val locationManager = getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
-    val providers =
-        listOf(
-            LocationManager.GPS_PROVIDER,
-            LocationManager.NETWORK_PROVIDER,
-        )
+    val locationManager =
+        context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
 
-    return providers
+    return LOCATION_PROVIDERS
         .mapNotNull { provider ->
             if (locationManager.isProviderEnabled(provider)) {
                 locationManager.getLastKnownLocation(provider)
@@ -404,3 +426,9 @@ private fun Context.lastKnownLocation(): Location? {
             }
         }.maxByOrNull { it.time }
 }
+
+private val LOCATION_PROVIDERS =
+    listOf(
+        LocationManager.GPS_PROVIDER,
+        LocationManager.NETWORK_PROVIDER,
+    )
