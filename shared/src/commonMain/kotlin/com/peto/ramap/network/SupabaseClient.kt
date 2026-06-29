@@ -1,11 +1,16 @@
 package com.peto.ramap.network
 
 import com.peto.ramap.shared.RamapConfig
+import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.http.HttpHeaders
 
+@OptIn(SupabaseInternal::class)
 val supabaseClient =
     createSupabaseClient(
         supabaseUrl = RamapConfig.SUPABASE_URL,
@@ -14,4 +19,16 @@ val supabaseClient =
         install(Postgrest)
         install(Storage)
         install(Auth)
+
+        httpConfig {
+            install(Logging) {
+                level = LogLevel.INFO
+                sanitizeHeader { header ->
+                    header.equals(HttpHeaders.Authorization, ignoreCase = true) ||
+                        header.equals(SUPABASE_API_KEY_HEADER, ignoreCase = true)
+                }
+            }
+        }
     }
+
+private const val SUPABASE_API_KEY_HEADER = "apikey"
