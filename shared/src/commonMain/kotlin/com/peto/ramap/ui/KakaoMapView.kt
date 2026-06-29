@@ -1,7 +1,0 @@
-package com.peto.ramap.ui
-
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-
-@Composable
-expect fun KakaoMapView(modifier: Modifier = Modifier)
