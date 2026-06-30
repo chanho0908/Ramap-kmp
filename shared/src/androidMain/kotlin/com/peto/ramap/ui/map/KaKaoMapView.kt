@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 actual fun KakaoMapView(
     shops: RamenShops,
     onBoundsChanged: (MapBounds) -> Unit,
+    onShopClick: (RamenShop) -> Unit,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
@@ -82,6 +83,7 @@ actual fun KakaoMapView(
         kakaoMap = kakaoMapState.value,
         markerBitmap = markerBitmap,
         shops = shops,
+        onShopClick = onShopClick,
     )
 
     AndroidView(
@@ -174,10 +176,18 @@ private fun renderRamenShopMarkers(
     kakaoMap: KakaoMap?,
     markerBitmap: Bitmap,
     shops: RamenShops,
+    onShopClick: (RamenShop) -> Unit,
 ) {
     val renderedShopIds = remember { mutableSetOf<String>() }
 
-    LaunchedEffect(kakaoMap, markerBitmap, shops) {
+    LaunchedEffect(kakaoMap, markerBitmap, shops, onShopClick) {
+        kakaoMap?.setOnLabelClickListener { _, _, label ->
+            val shopId = label.tag as? String ?: return@setOnLabelClickListener false
+            val shop = shops.value[shopId] ?: return@setOnLabelClickListener false
+            onShopClick(shop)
+            true
+        }
+
         kakaoMap?.renderNewRamenShopMarkers(
             markerBitmap = markerBitmap,
             shops = shops,
@@ -365,6 +375,8 @@ private fun labelOptions(
                 shop.location.lng,
             ),
         ).setStyles(markerStyles)
+        .setClickable(true)
+        .setTag(shop.id)
         .setTexts(
             LabelTextBuilder().setTexts(shop.name),
         )

@@ -1,5 +1,6 @@
 package com.peto.ramap.data.model
 
+import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.RamenShop
 import kotlinx.serialization.SerialName
@@ -44,7 +45,7 @@ data class RamenShopResponse(
             businessHours = businessHours,
             instagramUrl = instagramUrl,
             kakaoRating = kakaoRating,
-            menuCategoryIds = menuCategoryIds.orEmpty(),
+            menuCategories = menuCategoryIds.orEmpty().mapNotNull(Category::fromId),
             isVisible = isVisible ?: false,
             createdAt = createdAt,
             updatedAt = updatedAt,

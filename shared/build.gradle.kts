@@ -118,6 +118,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.kakao.map)
+            implementation(libs.kotlinx.coroutines.android)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -131,6 +132,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.navigationevent.compose)
 
             // Supabase
             implementation(libs.supabase.postgrest)
@@ -161,11 +163,6 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
             implementation(libs.compose.ui.test)
-        }
-        val androidHostTest by getting {
-            dependencies {
-                implementation(libs.robolectric)
-            }
         }
     }
 }

@@ -2,17 +2,21 @@ package com.peto.ramap.ui.map
 
 import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.model.RamenShopSelectState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
     private val ramenShopRepository: RamenShopRepository,
+    private val shopWaitingSystemRepository: ShopWaitingSystemRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private var boundsLoadJob: Job? = null
     private var boundsLoadRequestId = 0L
@@ -21,6 +25,27 @@ class MapViewModel(
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
             is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
+            is MapIntent.OnShopSelected -> selectShop(intent.shop)
+            is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
+        }
+    }
+
+    private fun selectShop(shop: RamenShop) {
+        reduce { copy(selectedShop = RamenShopSelectState.Selected(shop)) }
+        runTask { loadShopWaitingSystem(shop.id) }
+    }
+
+    private fun dismissShopDetail() {
+        reduce { copy(selectedShop = RamenShopSelectState.UnSelected) }
+    }
+
+    private suspend fun loadShopWaitingSystem(shopId: String) {
+        if (currentState.shopWaiting.containsKey(shopId)) return
+
+        val waitingSystem = shopWaitingSystemRepository.fetchShopWaitingSystem(shopId)
+
+        reduce {
+            copy(shopWaiting = shopWaiting + (shopId to waitingSystem))
         }
     }
 

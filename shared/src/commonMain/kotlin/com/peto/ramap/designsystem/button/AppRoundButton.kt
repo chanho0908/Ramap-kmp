@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.components.button
+package com.peto.ramap.designsystem.button
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

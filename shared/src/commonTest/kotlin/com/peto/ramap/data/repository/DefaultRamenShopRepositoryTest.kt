@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.data.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.data.fixture.ramenShopResponseFixture
+import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.RamenShop
 import kotlinx.coroutines.test.runTest
@@ -20,7 +21,7 @@ class DefaultRamenShopRepositoryTest {
                             ramenShopResponseFixture(
                                 id = "shop-1",
                                 name = "라멘집",
-                                menuCategoryIds = listOf("shoyu", "tonkotsu"),
+                                menuCategoryIds = listOf("shoyu", "tonkotsu", "unknown"),
                                 isVisible = true,
                             ),
                             ramenShopResponseFixture(
@@ -55,7 +56,7 @@ class DefaultRamenShopRepositoryTest {
                         businessHours = "11:00-21:00",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         kakaoRating = 4.5,
-                        menuCategoryIds = listOf("shoyu", "tonkotsu"),
+                        menuCategories = listOf(Category.SHOYU, Category.TONKOTSU),
                         isVisible = true,
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",
@@ -71,7 +72,7 @@ class DefaultRamenShopRepositoryTest {
                         businessHours = null,
                         instagramUrl = null,
                         kakaoRating = null,
-                        menuCategoryIds = emptyList(),
+                        menuCategories = emptyList(),
                         isVisible = false,
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",

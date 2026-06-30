@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.components.text
+package com.peto.ramap.designsystem.text
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable

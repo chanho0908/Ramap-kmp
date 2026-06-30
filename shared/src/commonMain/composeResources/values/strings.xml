@@ -1,0 +1,29 @@
+<resources>
+    <string name="shop_detail_label_address">주소</string>
+    <string name="shop_detail_label_phone">전화</string>
+    <string name="shop_detail_label_business_hours">영업시간</string>
+    <string name="shop_detail_label_waiting">대기</string>
+    <string name="shop_detail_link_instagram">Instagram</string>
+    <string name="shop_detail_link_kakao_map">카카오맵에서 보기</string>
+    <string name="shop_detail_kakao_rating_label">카카오</string>
+    <string name="shop_detail_waiting_catchtable">캐치테이블</string>
+    <string name="shop_detail_waiting_tabling">테이블링</string>
+    <string name="shop_detail_waiting_syrup_friends">시럽 프렌즈</string>
+
+    <string name="menu_category_tonkotsu">돈코츠</string>
+    <string name="menu_category_shoyu">쇼유</string>
+    <string name="menu_category_shio">시오</string>
+    <string name="menu_category_miso">미소</string>
+    <string name="menu_category_tori">토리</string>
+    <string name="menu_category_tsukemen">츠케멘</string>
+    <string name="menu_category_mazesoba">마제소바</string>
+    <string name="menu_category_aburasoba">아부라소바</string>
+    <string name="menu_category_jiro">지로계</string>
+    <string name="menu_category_niboshi_gyokai">니보시/어패류</string>
+    <string name="menu_category_iekei">이에케</string>
+    <string name="menu_category_hiyashi">히야시</string>
+    <string name="menu_category_chukasoba">츄카소바</string>
+    <string name="menu_category_tomato">토마토라멘</string>
+
+    <string name="search_bar_placehodler">검색어를 입력해주세요</string>
+</resources>

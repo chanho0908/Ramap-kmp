@@ -9,12 +9,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.Font
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.laundry_gothic_bold
-import ramap.shared.generated.resources.laundry_gothic_regular
-import ramap.shared.generated.resources.nanum_square_neo_bold
-import ramap.shared.generated.resources.nanum_square_neo_extra_bold
-import ramap.shared.generated.resources.nanum_square_neo_light
-import ramap.shared.generated.resources.nanum_square_neo_regular
+import ramap.shared.generated.resources.satoshi_variable
 
 @Immutable
 data class AppTypography(
@@ -36,23 +31,21 @@ data class AppTypography(
 
 @Composable
 fun provideAppTypography(): AppTypography {
-    val laundryGothicFamily =
+    val satoshiFamily =
         FontFamily(
-            Font(Res.font.laundry_gothic_regular, FontWeight.Normal),
-            Font(Res.font.laundry_gothic_bold, FontWeight.Bold),
-        )
-    val nanumSquareNeoFamily =
-        FontFamily(
-            Font(Res.font.nanum_square_neo_light, FontWeight.Light),
-            Font(Res.font.nanum_square_neo_regular, FontWeight.Normal),
-            Font(Res.font.nanum_square_neo_bold, FontWeight.Bold),
-            Font(Res.font.nanum_square_neo_extra_bold, FontWeight.ExtraBold),
+            Font(Res.font.satoshi_variable, FontWeight.Light),
+            Font(Res.font.satoshi_variable, FontWeight.Normal),
+            Font(Res.font.satoshi_variable, FontWeight.Medium),
+            Font(Res.font.satoshi_variable, FontWeight.SemiBold),
+            Font(Res.font.satoshi_variable, FontWeight.Bold),
+            Font(Res.font.satoshi_variable, FontWeight.ExtraBold),
+            Font(Res.font.satoshi_variable, FontWeight.Black),
         )
 
     return AppTypography(
         h1 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
                 lineHeight = lineHeightPercent(28f, 140f),
@@ -60,7 +53,7 @@ fun provideAppTypography(): AppTypography {
             ),
         h2 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 24.sp,
                 lineHeight = lineHeightPercent(24f, 140f),
@@ -68,7 +61,7 @@ fun provideAppTypography(): AppTypography {
             ),
         h3 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 22.sp,
                 lineHeight = lineHeightPercent(22f, 140f),
@@ -76,7 +69,7 @@ fun provideAppTypography(): AppTypography {
             ),
         h3Brand =
             TextStyle(
-                fontFamily = laundryGothicFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
                 lineHeight = lineHeightPercent(20f, 140f),
@@ -84,7 +77,7 @@ fun provideAppTypography(): AppTypography {
             ),
         h4Brand =
             TextStyle(
-                fontFamily = laundryGothicFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
                 lineHeight = lineHeightPercent(20f, 140f),
@@ -92,7 +85,7 @@ fun provideAppTypography(): AppTypography {
             ),
         t1 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 18.sp,
                 lineHeight = lineHeightPercent(18f, 150f),
@@ -100,7 +93,7 @@ fun provideAppTypography(): AppTypography {
             ),
         t2 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 lineHeight = lineHeightPercent(16f, 150f),
@@ -108,7 +101,7 @@ fun provideAppTypography(): AppTypography {
             ),
         t3 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 14.sp,
                 lineHeight = lineHeightPercent(14f, 150f),
@@ -116,7 +109,7 @@ fun provideAppTypography(): AppTypography {
             ),
         b1 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 lineHeight = lineHeightPercent(14f, 150f),
@@ -124,7 +117,7 @@ fun provideAppTypography(): AppTypography {
             ),
         b2 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
                 lineHeight = lineHeightPercent(14f, 150f),
@@ -132,7 +125,7 @@ fun provideAppTypography(): AppTypography {
             ),
         b3 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 12.sp,
                 lineHeight = lineHeightPercent(12f, 150f),
@@ -140,7 +133,7 @@ fun provideAppTypography(): AppTypography {
             ),
         b4 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
                 lineHeight = lineHeightPercent(12f, 150f),
@@ -148,7 +141,7 @@ fun provideAppTypography(): AppTypography {
             ),
         c1 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 12.sp,
                 lineHeight = lineHeightPercent(12f, 150f),
@@ -156,7 +149,7 @@ fun provideAppTypography(): AppTypography {
             ),
         c2 =
             TextStyle(
-                fontFamily = nanumSquareNeoFamily,
+                fontFamily = satoshiFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp,
                 lineHeight = lineHeightPercent(11f, 150f),
