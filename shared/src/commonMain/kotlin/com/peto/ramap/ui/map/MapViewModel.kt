@@ -7,6 +7,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.model.RamenShopSelectState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -21,6 +22,13 @@ class MapViewModel(
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
             is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
+            is MapIntent.OnShopSelected -> {
+                reduce { copy(selectedShop = RamenShopSelectState.Selected(intent.shop)) }
+            }
+
+            is MapIntent.OnShopDetailDismissed -> {
+                reduce { copy(selectedShop = RamenShopSelectState.UnSelected) }
+            }
         }
     }
 

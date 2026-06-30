@@ -2,6 +2,7 @@ package com.peto.ramap.ui.map
 
 import app.cash.turbine.test
 import com.peto.ramap.data.fixture.BOUNDS_FIXTURE
+import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
@@ -159,7 +160,7 @@ private fun ramenShopFixture(): RamenShop =
         businessHours = "11:00-21:00",
         instagramUrl = "https://instagram.com/ramen_shop",
         kakaoRating = 4.5,
-        menuCategoryIds = listOf("shoyu"),
+        menuCategories = listOf(Category.SHOYU),
         isVisible = true,
         createdAt = "2026-06-01T00:00:00Z",
         updatedAt = "2026-06-02T00:00:00Z",

@@ -3,7 +3,10 @@ package com.peto.ramap.ui.map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import cocoapods.KakaoMapsSDK.CompetitionTypeNone
 import cocoapods.KakaoMapsSDK.CompetitionUnitPoi
@@ -31,6 +34,7 @@ import cocoapods.KakaoMapsSDK.TransitionTypeNone
 import cocoapods.KakaoMapsSDK.create
 import com.peto.ramap.core.config.RamenShopMarkerConfig
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CValue
@@ -58,16 +62,20 @@ private const val MARKER_TEXT_RED = 0x33 / 255.0
 private const val MARKER_TEXT_GREEN = 0x33 / 255.0
 private const val MARKER_TEXT_BLUE = 0x33 / 255.0
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
 @Composable
 actual fun KakaoMapView(
     shops: RamenShops,
     onBoundsChanged: (MapBounds) -> Unit,
+    onShopClick: (RamenShop) -> Unit,
     modifier: Modifier,
 ) {
     val mapController =
         remember {
-            IosKakaoMapController(onBoundsChanged = onBoundsChanged)
+            IosKakaoMapController(
+                onBoundsChanged = onBoundsChanged,
+                onShopClick = onShopClick,
+            )
         }
 
     UIKitView(
@@ -78,6 +86,11 @@ actual fun KakaoMapView(
         update = {
             mapController.updateShops(shops)
         },
+        properties =
+            UIKitInteropProperties(
+                interactionMode = UIKitInteropInteractionMode.NonCooperative,
+                isNativeAccessibilityEnabled = false,
+            ),
     )
 
     DisposableEffect(Unit) {
@@ -90,6 +103,7 @@ actual fun KakaoMapView(
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 private class IosKakaoMapController(
     private val onBoundsChanged: (MapBounds) -> Unit,
+    private val onShopClick: (RamenShop) -> Unit,
 ) : NSObject(),
     MapControllerDelegateProtocol,
     KakaoMapEventDelegateProtocol {
@@ -100,6 +114,7 @@ private class IosKakaoMapController(
     private val mapViewName = "ramap"
     private val markerLayerId = "ramen-shop-marker-layer"
     private val renderedShopIds = mutableSetOf<String>()
+    private val shopsByPoiId = mutableMapOf<String, RamenShop>()
     private var pendingShops: RamenShops? = null
     private var isStarted = false
     private var isMapViewAdded = false
@@ -181,13 +196,16 @@ private class IosKakaoMapController(
             labelManager.getLabelLayerWithLayerID(markerLayerId)
                 ?: labelManager.addLabelLayerWithOption(createMarkerLayerOptions()) ?: return
         layer.visible = true
+        layer.setClickable(true)
 
         newShops.forEach { shop ->
+            val poiId = "ramen-shop-${shop.id}"
             val option =
                 PoiOptions(
                     styleID = RamenShopMarkerConfig.STYLE_ID,
-                    poiID = "ramen-shop-${shop.id}",
+                    poiID = poiId,
                 )
+            option.clickable = true
 
             option.addText(
                 PoiText(
@@ -208,9 +226,20 @@ private class IosKakaoMapController(
                 )
 
             poi?.show()
+            poi?.clickable = true
 
+            shopsByPoiId[poiId] = shop
             renderedShopIds += shop.id
         }
+    }
+
+    override fun poiDidTappedWithKakaoMap(
+        kakaoMap: KakaoMap,
+        layerID: String,
+        poiID: String,
+        position: MapPoint,
+    ) {
+        shopsByPoiId[poiID]?.let(onShopClick)
     }
 
     private fun ensureMarkerStyle(labelManager: LabelManager) {

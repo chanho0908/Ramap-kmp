@@ -1,0 +1,229 @@
+package com.peto.ramap.ui.map.component
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.peto.ramap.core.extension.noRippleClickable
+import com.peto.ramap.core.extension.stringResource
+import com.peto.ramap.designsystem.components.text.AppText
+import com.peto.ramap.domain.model.Category
+import com.peto.ramap.domain.model.Location
+import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.instagram_icon
+import ramap.shared.generated.resources.kakao_map_icon
+import ramap.shared.generated.resources.preview_shop_address
+import ramap.shared.generated.resources.preview_shop_business_hours
+import ramap.shared.generated.resources.preview_shop_name
+import ramap.shared.generated.resources.preview_shop_phone
+import ramap.shared.generated.resources.shop_detail_label_address
+import ramap.shared.generated.resources.shop_detail_label_business_hours
+import ramap.shared.generated.resources.shop_detail_label_phone
+import ramap.shared.generated.resources.shop_detail_link_instagram
+import ramap.shared.generated.resources.shop_detail_link_kakao_map
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun RamenShopDetailContent(
+    shop: RamenShop,
+    modifier: Modifier = Modifier,
+) {
+    val uriHandler = LocalUriHandler.current
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                AppText(
+                    text = shop.name,
+                    modifier = Modifier.weight(1f),
+                    style = AppTextStyle.H3,
+                    color = GrayColor.C500,
+                )
+
+                shop.kakaoRating
+                    ?.takeIf { rating -> rating > 0.0 }
+                    ?.let { rating ->
+                        RatingChip(rating = rating)
+                    }
+            }
+
+            if (shop.hasCategory) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    shop.menuCategories.forEach { category ->
+                        MenuCategoryChip(label = stringResource(category.stringResource))
+                    }
+                }
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            ShopInfoRow(
+                label = stringResource(Res.string.shop_detail_label_address),
+                value = shop.address,
+            )
+
+            shop.phone?.let { phone ->
+                ShopInfoRow(
+                    label = stringResource(Res.string.shop_detail_label_phone),
+                    value = phone,
+                    onClick = { uriHandler.openUri("tel:$phone") },
+                )
+            }
+
+            shop.businessHours?.let { businessHours ->
+                ShopInfoRow(
+                    label = stringResource(Res.string.shop_detail_label_business_hours),
+                    value = businessHours,
+                )
+            }
+        }
+
+        HorizontalDivider(
+            thickness = 2.dp,
+            color = GrayColor.C100,
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            shop.instagramUrl?.let { instagramUrl ->
+                ShopLinkRow(
+                    icon = Res.drawable.instagram_icon,
+                    label = stringResource(Res.string.shop_detail_link_instagram),
+                    onClick = { uriHandler.openUri(instagramUrl) },
+                )
+            }
+
+            shop.kakaoPlaceUrl?.let { kakaoPlaceUrl ->
+                ShopLinkRow(
+                    icon = Res.drawable.kakao_map_icon,
+                    label = stringResource(Res.string.shop_detail_link_kakao_map),
+                    onClick = { uriHandler.openUri(kakaoPlaceUrl) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShopInfoRow(
+    label: String,
+    value: String,
+    onClick: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        AppText(
+            text = label,
+            style = AppTextStyle.B1,
+            color = GrayColor.C300,
+        )
+        AppText(
+            text = value,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .then(
+                        if (onClick == null) {
+                            Modifier
+                        } else {
+                            Modifier.noRippleClickable(onClick = onClick)
+                        },
+                    ),
+            style = AppTextStyle.B2,
+            color = GrayColor.C500,
+            textDecoration = if (onClick == null) null else TextDecoration.Underline,
+        )
+    }
+}
+
+@Composable
+private fun ShopLinkRow(
+    icon: DrawableResource,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.noRippleClickable(onClick = onClick),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+        )
+        AppText(
+            text = label,
+            style = AppTextStyle.B1,
+            color = GrayColor.C500,
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun RamenShopDetailContentPreview() {
+    RamapTheme {
+        Surface {
+            RamenShopDetailContent(
+                RamenShop(
+                    id = "preview-shop",
+                    kakaoPlaceId = "123456789",
+                    name = stringResource(Res.string.preview_shop_name),
+                    address = stringResource(Res.string.preview_shop_address),
+                    location =
+                        Location(
+                            lat = 37.5485,
+                            lng = 126.9198,
+                        ),
+                    kakaoPlaceUrl = "https://place.map.kakao.com/123456789",
+                    phone = stringResource(Res.string.preview_shop_phone),
+                    businessHours = stringResource(Res.string.preview_shop_business_hours),
+                    instagramUrl = "https://www.instagram.com/ramap",
+                    kakaoRating = 4.6,
+                    menuCategories = listOf(Category.TORI, Category.SHIO, Category.TSUKEMEN),
+                    isVisible = true,
+                    createdAt = "2026-01-01T00:00:00Z",
+                    updatedAt = "2026-01-01T00:00:00Z",
+                ),
+            )
+        }
+    }
+}

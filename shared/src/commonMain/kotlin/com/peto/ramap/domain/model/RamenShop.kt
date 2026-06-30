@@ -15,4 +15,7 @@ data class RamenShop(
     val isVisible: Boolean,
     val createdAt: String,
     val updatedAt: String,
-)
+) {
+    val hasCategory: Boolean
+        get() = menuCategories.isNotEmpty()
+}
