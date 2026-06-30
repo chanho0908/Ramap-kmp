@@ -24,6 +24,8 @@ import com.peto.ramap.designsystem.components.text.AppText
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.ShopWaitingSystem
+import com.peto.ramap.domain.model.WaitingProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -31,6 +33,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
 import ramap.shared.generated.resources.preview_shop_address
@@ -40,16 +43,24 @@ import ramap.shared.generated.resources.preview_shop_phone
 import ramap.shared.generated.resources.shop_detail_label_address
 import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
+import ramap.shared.generated.resources.shop_detail_label_waiting
 import ramap.shared.generated.resources.shop_detail_link_instagram
 import ramap.shared.generated.resources.shop_detail_link_kakao_map
+import ramap.shared.generated.resources.shop_detail_waiting_catchtable
+import ramap.shared.generated.resources.shop_detail_waiting_syrup_friends
+import ramap.shared.generated.resources.shop_detail_waiting_tabling
+import ramap.shared.generated.resources.syrup_friends
+import ramap.shared.generated.resources.tabling
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RamenShopDetailContent(
     shop: RamenShop,
     modifier: Modifier = Modifier,
+    waitingSystem: ShopWaitingSystem? = null,
 ) {
     val uriHandler = LocalUriHandler.current
+    val waitingProviderLink = waitingSystem?.toWaitingProviderLink()
 
     Column(
         modifier =
@@ -111,6 +122,15 @@ fun RamenShopDetailContent(
                     value = businessHours,
                 )
             }
+
+            if (waitingProviderLink != null) {
+                ShopIconLinkRow(
+                    label = stringResource(Res.string.shop_detail_label_waiting),
+                    icon = waitingProviderLink.icon,
+                    contentDescription = waitingProviderLink.label,
+                    onClick = { uriHandler.openUri(waitingProviderLink.providerUrl) },
+                )
+            }
         }
 
         HorizontalDivider(
@@ -136,6 +156,44 @@ fun RamenShopDetailContent(
             }
         }
     }
+}
+
+private data class WaitingProviderLink(
+    val label: String,
+    val icon: DrawableResource,
+    val providerUrl: String,
+)
+
+@Composable
+private fun ShopWaitingSystem.toWaitingProviderLink(): WaitingProviderLink? {
+    val url = providerUrl ?: return null
+    val display =
+        when (provider) {
+            WaitingProvider.CATCHTABLE ->
+                WaitingProviderLink(
+                    label = stringResource(Res.string.shop_detail_waiting_catchtable),
+                    icon = Res.drawable.catchtable,
+                    providerUrl = url,
+                )
+
+            WaitingProvider.TABLING ->
+                WaitingProviderLink(
+                    label = stringResource(Res.string.shop_detail_waiting_tabling),
+                    icon = Res.drawable.tabling,
+                    providerUrl = url,
+                )
+
+            WaitingProvider.SYRUP_FRIENDS ->
+                WaitingProviderLink(
+                    label = stringResource(Res.string.shop_detail_waiting_syrup_friends),
+                    icon = Res.drawable.syrup_friends,
+                    providerUrl = url,
+                )
+
+            WaitingProvider.UNKNOWN -> null
+        }
+
+    return display
 }
 
 @Composable
@@ -197,32 +255,68 @@ private fun ShopLinkRow(
     }
 }
 
+@Composable
+private fun ShopIconLinkRow(
+    label: String,
+    icon: DrawableResource,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppText(
+            text = label,
+            style = AppTextStyle.B1,
+            color = GrayColor.C300,
+        )
+        Image(
+            painter = painterResource(icon),
+            contentDescription = contentDescription,
+            modifier =
+                Modifier
+                    .size(28.dp)
+                    .noRippleClickable(onClick = onClick),
+        )
+    }
+}
+
 @Preview
 @Composable
 private fun RamenShopDetailContentPreview() {
     RamapTheme {
         Surface {
             RamenShopDetailContent(
-                RamenShop(
-                    id = "preview-shop",
-                    kakaoPlaceId = "123456789",
-                    name = stringResource(Res.string.preview_shop_name),
-                    address = stringResource(Res.string.preview_shop_address),
-                    location =
-                        Location(
-                            lat = 37.5485,
-                            lng = 126.9198,
-                        ),
-                    kakaoPlaceUrl = "https://place.map.kakao.com/123456789",
-                    phone = stringResource(Res.string.preview_shop_phone),
-                    businessHours = stringResource(Res.string.preview_shop_business_hours),
-                    instagramUrl = "https://www.instagram.com/ramap",
-                    kakaoRating = 4.6,
-                    menuCategories = listOf(Category.TORI, Category.SHIO, Category.TSUKEMEN),
-                    isVisible = true,
-                    createdAt = "2026-01-01T00:00:00Z",
-                    updatedAt = "2026-01-01T00:00:00Z",
-                ),
+                shop =
+                    RamenShop(
+                        id = "preview-shop",
+                        kakaoPlaceId = "123456789",
+                        name = stringResource(Res.string.preview_shop_name),
+                        address = stringResource(Res.string.preview_shop_address),
+                        location =
+                            Location(
+                                lat = 37.5485,
+                                lng = 126.9198,
+                            ),
+                        kakaoPlaceUrl = "https://place.map.kakao.com/123456789",
+                        phone = stringResource(Res.string.preview_shop_phone),
+                        businessHours = stringResource(Res.string.preview_shop_business_hours),
+                        instagramUrl = "https://www.instagram.com/ramap",
+                        kakaoRating = 4.6,
+                        menuCategories = listOf(Category.TORI, Category.SHIO, Category.TSUKEMEN),
+                        isVisible = true,
+                        createdAt = "2026-01-01T00:00:00Z",
+                        updatedAt = "2026-01-01T00:00:00Z",
+                    ),
+                waitingSystem =
+                    ShopWaitingSystem(
+                        id = "preview-waiting",
+                        shopId = "preview-shop",
+                        provider = WaitingProvider.CATCHTABLE,
+                        providerUrl = "https://app.catchtable.co.kr/ct/shop/preview",
+                    ),
             )
         }
     }

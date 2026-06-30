@@ -57,7 +57,10 @@ private fun MapScreen(
             config = CommonBottomSheetConfig(),
             content = {
                 selectedShop?.let { state ->
-                    RamenShopDetailContent(shop = state.value)
+                    RamenShopDetailContent(
+                        shop = state.value,
+                        waitingSystem = uiState.shopWaiting[state.value.id],
+                    )
                 }
             },
         )
