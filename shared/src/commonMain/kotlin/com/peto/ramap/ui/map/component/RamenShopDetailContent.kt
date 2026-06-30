@@ -29,6 +29,7 @@ import com.peto.ramap.domain.model.WaitingProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.map.model.WaitingProviderLink
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -157,12 +158,6 @@ fun RamenShopDetailContent(
         }
     }
 }
-
-private data class WaitingProviderLink(
-    val label: String,
-    val icon: DrawableResource,
-    val providerUrl: String,
-)
 
 @Composable
 private fun ShopWaitingSystem.toWaitingProviderLink(): WaitingProviderLink? {
