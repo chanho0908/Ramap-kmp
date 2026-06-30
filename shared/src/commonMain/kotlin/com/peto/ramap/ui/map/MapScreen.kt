@@ -6,8 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.components.bottomsheet.CommonBottomSheet
-import com.peto.ramap.designsystem.components.bottomsheet.CommonBottomSheetConfig
+import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
+import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.ui.map.component.RamenShopDetailContent
