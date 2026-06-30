@@ -5,6 +5,7 @@ import KakaoMapsSDK
 @main
 struct iOSApp: App {
     init() {
+        UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
         SDKInitializer.InitSDK(appKey: RamapAppConfig.shared.kakaoNativeAppKey)
         KoinInitializerKt.doInitKoin(appDeclaration: { _ in })
     }
