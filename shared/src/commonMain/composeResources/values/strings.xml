@@ -25,9 +25,5 @@
     <string name="menu_category_chukasoba">츄카소바</string>
     <string name="menu_category_tomato">토마토라멘</string>
 
-    <string name="preview_shop_name">오레노라멘 합정본점</string>
-    <string name="preview_shop_address">서울 마포구 독막로6길 14</string>
-    <string name="preview_shop_phone">02-1234-5678</string>
-    <string name="preview_shop_business_hours">매일 11:00 - 21:00</string>
-
+    <string name="search_bar_placehodler">검색어를 입력해주세요</string>
 </resources>

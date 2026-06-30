@@ -10,25 +10,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.core.extension.stringResource
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.Category
-import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.map.model.WaitingProviderLink
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -37,10 +32,6 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
-import ramap.shared.generated.resources.preview_shop_address
-import ramap.shared.generated.resources.preview_shop_business_hours
-import ramap.shared.generated.resources.preview_shop_name
-import ramap.shared.generated.resources.preview_shop_phone
 import ramap.shared.generated.resources.shop_detail_label_address
 import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
@@ -275,44 +266,5 @@ private fun ShopIconLinkRow(
                     .size(28.dp)
                     .noRippleClickable(onClick = onClick),
         )
-    }
-}
-
-@Preview
-@Composable
-private fun RamenShopDetailContentPreview() {
-    RamapTheme {
-        Surface {
-            RamenShopDetailContent(
-                shop =
-                    RamenShop(
-                        id = "preview-shop",
-                        kakaoPlaceId = "123456789",
-                        name = stringResource(Res.string.preview_shop_name),
-                        address = stringResource(Res.string.preview_shop_address),
-                        location =
-                            Location(
-                                lat = 37.5485,
-                                lng = 126.9198,
-                            ),
-                        kakaoPlaceUrl = "https://place.map.kakao.com/123456789",
-                        phone = stringResource(Res.string.preview_shop_phone),
-                        businessHours = stringResource(Res.string.preview_shop_business_hours),
-                        instagramUrl = "https://www.instagram.com/ramap",
-                        kakaoRating = 4.6,
-                        menuCategories = listOf(Category.TORI, Category.SHIO, Category.TSUKEMEN),
-                        isVisible = true,
-                        createdAt = "2026-01-01T00:00:00Z",
-                        updatedAt = "2026-01-01T00:00:00Z",
-                    ),
-                waitingSystem =
-                    ShopWaitingSystem(
-                        id = "preview-waiting",
-                        shopId = "preview-shop",
-                        provider = WaitingProvider.CATCHTABLE,
-                        providerUrl = "https://app.catchtable.co.kr/ct/shop/preview",
-                    ),
-            )
-        }
     }
 }
