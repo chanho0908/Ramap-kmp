@@ -10,6 +10,7 @@ androidx-lifecycle = "2.11.0-beta01"
 composeMultiplatform = "1.11.1"
 kotlin = "2.4.0"
 material3 = "1.11.0-alpha07"
+navigationevent = "1.1.0"
 supabase = "3.6.0"
 ktor = "3.5.1"
 koin = "4.2.2"
@@ -37,6 +38,7 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
 kakao-map = { module = "com.kakao.maps.open:android", version.ref = "android" }
 
 # Supabase
@@ -69,6 +71,9 @@ okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 # Serialization
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+# Coroutine
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 
 # Testing
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
