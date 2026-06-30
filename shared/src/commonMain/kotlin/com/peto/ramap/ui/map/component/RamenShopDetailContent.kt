@@ -20,7 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.core.extension.stringResource
-import com.peto.ramap.designsystem.components.text.AppText
+import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.RamenShop

@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.components.bottomsheet
+package com.peto.ramap.designsystem.bottomsheet
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Immutable
