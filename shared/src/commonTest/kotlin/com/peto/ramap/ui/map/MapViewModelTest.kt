@@ -1,15 +1,13 @@
 package com.peto.ramap.ui.map
 
 import app.cash.turbine.test
+import com.peto.ramap.data.fake.FakeRamenShopRepository
+import com.peto.ramap.data.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.data.fixture.BOUNDS_FIXTURE
-import com.peto.ramap.domain.model.Category
-import com.peto.ramap.domain.model.Location
-import com.peto.ramap.domain.model.MapBounds
-import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.data.fixture.ramenShopFixture
+import com.peto.ramap.data.fixture.waitingSystemFixture
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
-import com.peto.ramap.domain.model.ShopWaitingSystem
-import com.peto.ramap.domain.model.WaitingProvider
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.ui.map.contract.MapIntent
@@ -471,69 +469,7 @@ class MapViewModelTest {
         }
 }
 
-private class FakeRamenShopRepository(
-    private val result: RamenShops = RamenShops(emptyMap()),
-    private val searchResult: RamenShops = RamenShops(emptyMap()),
-) : RamenShopRepository {
-    val requestedBoundsHistory = mutableListOf<MapBounds>()
-    val requestedSearchQueries = mutableListOf<SearchQuery>()
-    val requestedSearchLimits = mutableListOf<Int>()
-
-    override suspend fun fetchRamenShops(bounds: MapBounds): RamenShops {
-        requestedBoundsHistory += bounds
-        return result
-    }
-
-    override suspend fun searchRamenShops(
-        query: SearchQuery,
-        limit: Int,
-    ): RamenShops {
-        requestedSearchQueries += query
-        requestedSearchLimits += limit
-        return searchResult
-    }
-}
-
-private class FakeShopWaitingSystemRepository(
-    private val result: ShopWaitingSystem? = null,
-    private val error: Throwable? = null,
-) : ShopWaitingSystemRepository {
-    val requestedShopIds = mutableListOf<String>()
-
-    override suspend fun fetchShopWaitingSystem(shopId: String): ShopWaitingSystem? {
-        requestedShopIds += shopId
-        error?.let { throw it }
-        return result
-    }
-}
-
 private fun mapViewModel(
     ramenShopRepository: RamenShopRepository = FakeRamenShopRepository(),
     shopWaitingSystemRepository: ShopWaitingSystemRepository = FakeShopWaitingSystemRepository(),
 ): MapViewModel = MapViewModel(ramenShopRepository, shopWaitingSystemRepository)
-
-private fun ramenShopFixture(): RamenShop =
-    RamenShop(
-        id = "shop-1",
-        kakaoPlaceId = "kakao-shop-1",
-        name = "라멘집",
-        address = "서울시 마포구 라멘로 1",
-        location = Location(lat = 37.551, lng = 126.921),
-        kakaoPlaceUrl = "https://place.map.kakao.com/shop-1",
-        phone = "02-0000-0000",
-        businessHours = "11:00-21:00",
-        instagramUrl = "https://instagram.com/ramen_shop",
-        kakaoRating = 4.5,
-        menuCategories = listOf(Category.SHOYU),
-        isVisible = true,
-        createdAt = "2026-06-01T00:00:00Z",
-        updatedAt = "2026-06-02T00:00:00Z",
-    )
-
-private fun waitingSystemFixture(shopId: String): ShopWaitingSystem =
-    ShopWaitingSystem(
-        id = "waiting-$shopId",
-        shopId = shopId,
-        provider = WaitingProvider.CATCHTABLE,
-        providerUrl = "https://app.catchtable.co.kr/ct/shop/$shopId",
-    )
