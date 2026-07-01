@@ -7,12 +7,12 @@ import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.ui.map.contract.MapIntent
-import com.peto.ramap.ui.map.model.RamenShopSelectState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -153,7 +153,7 @@ class MapViewModelTest {
                 viewModel.dispatch(MapIntent.OnShopSelected(shop))
                 runCurrent()
 
-                assertEquals(RamenShopSelectState.Selected(shop), viewModel.uiState.value.selectedShop)
+                assertEquals(shop, viewModel.uiState.value.selectedShop)
                 assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
                 assertEquals(waitingSystem, viewModel.uiState.value.shopWaiting[shop.id])
             } finally {
@@ -180,7 +180,7 @@ class MapViewModelTest {
                         .shopWaiting
                         .containsKey(shop.id)
 
-                assertEquals(RamenShopSelectState.Selected(shop), viewModel.uiState.value.selectedShop)
+                assertEquals(shop, viewModel.uiState.value.selectedShop)
                 assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
                 assertEquals(true, containsWaitingSystem)
                 assertEquals(null, viewModel.uiState.value.shopWaiting[shop.id])
@@ -239,16 +239,223 @@ class MapViewModelTest {
                 Dispatchers.resetMain()
             }
         }
+
+    @Test
+    fun `검색어가 변경되면 지연 후 정규화한 검색어로 가게를 검색한다`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val shops = RamenShops(listOf(ramenShopFixture()).associateBy { it.id })
+                val ramenShopRepository = FakeRamenShopRepository(searchResult = shops)
+                val viewModel = mapViewModel(ramenShopRepository)
+
+                viewModel.dispatch(MapIntent.OnQueryChanged("  RAMEN   SHOP  "))
+                advanceTimeBy(299)
+                runCurrent()
+
+                assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
+
+                advanceTimeBy(1)
+                runCurrent()
+
+                assertEquals(listOf(SearchQuery("ramen shop")), ramenShopRepository.requestedSearchQueries)
+                assertEquals(listOf(50), ramenShopRepository.requestedSearchLimits)
+                assertEquals(shops, viewModel.uiState.value.searchResults)
+                assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+                assertEquals(shops, viewModel.uiState.value.markerShops)
+                assertEquals(shops.value.values.toList(), viewModel.uiState.value.focusShops)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `검색 중에는 지도 영역 매장이 아닌 검색 결과만 마커로 보여준다`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val mapShops =
+                    RamenShops(
+                        listOf(
+                            ramenShopFixture().copy(
+                                id = "map-shop",
+                                name = "지도 매장",
+                            ),
+                        ).associateBy { it.id },
+                    )
+                val searchShops =
+                    RamenShops(
+                        listOf(
+                            ramenShopFixture().copy(
+                                id = "search-shop",
+                                name = "검색 매장",
+                            ),
+                        ).associateBy { it.id },
+                    )
+                val ramenShopRepository =
+                    FakeRamenShopRepository(
+                        result = mapShops,
+                        searchResult = searchShops,
+                    )
+                val viewModel = mapViewModel(ramenShopRepository)
+
+                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+                advanceTimeBy(350)
+                runCurrent()
+                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                advanceTimeBy(300)
+                runCurrent()
+
+                assertEquals(mapShops, viewModel.uiState.value.shops)
+                assertEquals(searchShops, viewModel.uiState.value.searchResults)
+                assertEquals(searchShops, viewModel.uiState.value.markerShops)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `현재 검색 결과가 도착하기 전에는 기존 지도 영역 매장 마커를 유지한다`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val mapShops =
+                    RamenShops(
+                        listOf(
+                            ramenShopFixture().copy(
+                                id = "map-shop",
+                                name = "지도 매장",
+                            ),
+                        ).associateBy { it.id },
+                    )
+                val searchShops =
+                    RamenShops(
+                        listOf(
+                            ramenShopFixture().copy(
+                                id = "search-shop",
+                                name = "검색 매장",
+                            ),
+                        ).associateBy { it.id },
+                    )
+                val ramenShopRepository =
+                    FakeRamenShopRepository(
+                        result = mapShops,
+                        searchResult = searchShops,
+                    )
+                val viewModel = mapViewModel(ramenShopRepository)
+
+                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+                advanceTimeBy(350)
+                runCurrent()
+                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                advanceTimeBy(299)
+                runCurrent()
+
+                assertEquals(mapShops, viewModel.uiState.value.markerShops)
+
+                advanceTimeBy(1)
+                runCurrent()
+
+                assertEquals(searchShops, viewModel.uiState.value.markerShops)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `검색어가 연속으로 변경되면 마지막 검색어만 검색한다`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val ramenShopRepository = FakeRamenShopRepository()
+                val viewModel = mapViewModel(ramenShopRepository)
+
+                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                advanceTimeBy(150)
+                viewModel.dispatch(MapIntent.OnQueryChanged("라멘집"))
+                advanceTimeBy(299)
+                runCurrent()
+
+                assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
+
+                advanceTimeBy(1)
+                runCurrent()
+
+                assertEquals(listOf(SearchQuery("라멘집")), ramenShopRepository.requestedSearchQueries)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `검색어가 비어 있으면 검색 결과를 비우고 현재 지도 영역 매장을 보여준다`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val mapShops =
+                    RamenShops(
+                        listOf(
+                            ramenShopFixture().copy(
+                                id = "map-shop",
+                                name = "지도 매장",
+                            ),
+                        ).associateBy { it.id },
+                    )
+                val searchShops =
+                    RamenShops(
+                        listOf(
+                            ramenShopFixture().copy(
+                                id = "search-shop",
+                                name = "검색 매장",
+                            ),
+                        ).associateBy { it.id },
+                    )
+                val ramenShopRepository =
+                    FakeRamenShopRepository(
+                        result = mapShops,
+                        searchResult = searchShops,
+                    )
+                val viewModel = mapViewModel(ramenShopRepository)
+
+                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+                advanceTimeBy(350)
+                runCurrent()
+                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                advanceTimeBy(300)
+                runCurrent()
+                viewModel.dispatch(MapIntent.OnQueryChanged("   "))
+                runCurrent()
+
+                assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResults)
+                assertEquals(mapShops, viewModel.uiState.value.shops)
+                assertEquals(mapShops, viewModel.uiState.value.markerShops)
+                assertEquals(listOf(SearchQuery("라멘")), ramenShopRepository.requestedSearchQueries)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
 }
 
 private class FakeRamenShopRepository(
     private val result: RamenShops = RamenShops(emptyMap()),
+    private val searchResult: RamenShops = RamenShops(emptyMap()),
 ) : RamenShopRepository {
     val requestedBoundsHistory = mutableListOf<MapBounds>()
+    val requestedSearchQueries = mutableListOf<SearchQuery>()
+    val requestedSearchLimits = mutableListOf<Int>()
 
     override suspend fun fetchRamenShops(bounds: MapBounds): RamenShops {
         requestedBoundsHistory += bounds
         return result
+    }
+
+    override suspend fun searchRamenShops(
+        query: SearchQuery,
+        limit: Int,
+    ): RamenShops {
+        requestedSearchQueries += query
+        requestedSearchLimits += limit
+        return searchResult
     }
 }
 
