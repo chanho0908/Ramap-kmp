@@ -26,4 +26,5 @@
     <string name="menu_category_tomato">토마토라멘</string>
 
     <string name="search_bar_placehodler">검색어를 입력해주세요</string>
+    <string name="search_result_count">%1$d개의 검색 결과</string>
 </resources>

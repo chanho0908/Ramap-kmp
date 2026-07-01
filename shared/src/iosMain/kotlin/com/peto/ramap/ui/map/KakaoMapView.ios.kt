@@ -76,6 +76,7 @@ private const val EARTH_RADIUS_METERS = 6_371_000.0
 @Composable
 actual fun KakaoMapView(
     shops: RamenShops,
+    focusShops: List<RamenShop>,
     onBoundsChanged: (MapBounds) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier,
@@ -95,6 +96,7 @@ actual fun KakaoMapView(
         },
         update = {
             mapController.updateShops(shops)
+            mapController.updateFocusShops(focusShops)
         },
         properties =
             UIKitInteropProperties(
@@ -150,6 +152,10 @@ private class IosKakaoMapController(
         renderRamenShopMarkers(shops)
     }
 
+    fun updateFocusShops(shops: List<RamenShop>) {
+        // iOS camera fitting will be wired in the platform-specific follow-up.
+    }
+
     fun dispose() {
         controller.pauseEngine()
         controller.resetEngine()
@@ -200,10 +206,6 @@ private class IosKakaoMapController(
         if (!isMapViewAdded) return
 
         val kakaoMap = controller.getView(mapViewName) as? KakaoMap ?: return
-        val newShops = shops.filterNotContainShops(renderedShopIds)
-
-        if (newShops.isEmpty()) return
-
         val labelManager = kakaoMap.getLabelManager()
         ensureMarkerStyle(labelManager)
 
@@ -213,8 +215,22 @@ private class IosKakaoMapController(
         layer.visible = true
         layer.setClickable(true)
 
+        val currentShopIds = shops.value.keys
+        val staleShopIds = renderedShopIds - currentShopIds
+        val stalePoiIds = staleShopIds.map { shopId -> shopId.toMarkerPoiId() }
+
+        if (stalePoiIds.isNotEmpty()) {
+            layer.removePoisWithPoiIDs(stalePoiIds, callback = null)
+            stalePoiIds.forEach(shopsByPoiId::remove)
+            renderedShopIds.removeAll(staleShopIds)
+        }
+
+        val newShops = shops.filterNotContainShops(renderedShopIds)
+
+        if (newShops.isEmpty()) return
+
         newShops.forEach { shop ->
-            val poiId = "ramen-shop-${shop.id}"
+            val poiId = shop.id.toMarkerPoiId()
             val option =
                 PoiOptions(
                     styleID = RamenShopMarkerConfig.STYLE_ID,
@@ -412,6 +428,8 @@ private class IosKakaoMapController(
             blue = MARKER_TEXT_BLUE,
             alpha = 1.0,
         )
+
+    private fun String.toMarkerPoiId(): String = "ramen-shop-$this"
 }
 
 @OptIn(ExperimentalForeignApi::class)
