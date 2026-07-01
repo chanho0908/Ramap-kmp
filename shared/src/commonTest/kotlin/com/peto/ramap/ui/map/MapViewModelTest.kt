@@ -266,6 +266,39 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `검색 결과가 하나이면 매장 상세 바텀시트를 바로 열고 웨이팅 시스템을 조회한다`() =
+        coroutinesTest {
+            val shop =
+                ramenShopFixture().copy(
+                    id = "search-shop",
+                    name = "검색 매장",
+                )
+            val searchShops = RamenShops(listOf(shop).associateBy { it.id })
+            val waitingSystem = waitingSystemFixture(shopId = shop.id)
+            val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
+            val waitingSystemRepository =
+                FakeShopWaitingSystemRepository(result = waitingSystem)
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = ramenShopRepository,
+                    shopWaitingSystemRepository = waitingSystemRepository,
+                )
+
+            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(true, viewModel.uiState.value.showBottomSheet)
+            assertEquals(false, viewModel.uiState.value.showSearchResults)
+            assertEquals(searchShops, viewModel.uiState.value.searchResults)
+            assertEquals(searchShops, viewModel.uiState.value.markerShops)
+            assertEquals(listOf(shop), viewModel.uiState.value.focusShops)
+            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(waitingSystem, viewModel.uiState.value.shopWaiting[shop.id])
+        }
+
+    @Test
     fun `현재 검색 결과가 도착하기 전에는 기존 지도 영역 매장 마커를 유지한다`() =
         coroutinesTest {
             val mapShops =
