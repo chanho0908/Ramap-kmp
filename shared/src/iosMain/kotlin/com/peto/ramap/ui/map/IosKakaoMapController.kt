@@ -99,31 +99,12 @@ class IosKakaoMapController(
     }
 
     /**
-     * 현재 지도에 표시해야 할 매장 목록을 갱신한다.
-     *
-     * 지도 뷰가 아직 추가되지 않은 경우에는 [pendingShops]에 보관했다가 [addViewSucceeded]
-     * 이후 마커를 렌더링한다.
+     * Kakao 지도 엔진을 시작할 수 있을 만큼 컨테이너가 실제 크기를 가졌는지 확인한다.
      */
-    fun updateShops(shops: RamenShops) {
-        pendingShops = shops
-        renderRamenShopMarkers(shops)
-    }
-
-    /**
-     * 검색 결과 또는 선택 매장을 지도 카메라의 포커스 대상으로 반영한다.
-     *
-     * 빈 목록과 동일한 포커스 요청은 무시한다. 대상이 하나면 해당 매장 중심으로 이동하고,
-     * 둘 이상이면 모든 대상이 보이도록 Kakao Maps SDK의 영역 맞춤 카메라 업데이트를 적용한다.
-     */
-    fun updateFocusShops(shops: List<RamenShop>) {
-        if (!isMapViewAdded) return
-
-        if (!shouldUpdateFocus(shops)) return
-
-        val kakaoMap = getKakaoMap() ?: return
-        lastFocusKey = shops.focusKey()
-        focusShops(kakaoMap, shops)
-    }
+    private fun hasMeasuredSize(): Boolean =
+        mapViewContainer.bounds.useContents {
+            size.width > 0.0 && size.height > 0.0
+        }
 
     /**
      * Kakao Maps SDK 엔진을 준비하고 활성화 상태로 전환한다.
@@ -137,94 +118,33 @@ class IosKakaoMapController(
     }
 
     /**
-     * 전달된 매장 목록이 새 카메라 포커스 요청인지 확인한다.
-     */
-    private fun shouldUpdateFocus(shops: List<RamenShop>): Boolean {
-        val focusKey = shops.focusKey()
-
-        return focusKey.isNotBlank() && lastFocusKey != focusKey
-    }
-
-    /**
-     * 매장 수에 따라 단일 중심 이동 또는 다중 영역 맞춤 이동을 선택한다.
-     */
-    private fun focusShops(
-        kakaoMap: KakaoMap,
-        shops: List<RamenShop>,
-    ) {
-        when (shops.size) {
-            1 -> moveToShop(kakaoMap, shops.first())
-            else -> fitShops(kakaoMap, shops)
-        }
-    }
-
-    /**
-     * 단일 매장을 지도 중심으로 이동한다.
-     */
-    private fun moveToShop(
-        kakaoMap: KakaoMap,
-        shop: RamenShop,
-    ) {
-        moveCamera(
-            kakaoMap = kakaoMap,
-            cameraUpdate =
-                CameraUpdate.makeWithTarget(
-                    target = shop.toMapPoint(),
-                    mapView = kakaoMap,
-                ),
-        )
-    }
-
-    /**
-     * 여러 매장이 모두 보이도록 지도 카메라 영역을 맞춘다.
-     */
-    private fun fitShops(
-        kakaoMap: KakaoMap,
-        shops: List<RamenShop>,
-    ) {
-        moveCamera(
-            kakaoMap = kakaoMap,
-            cameraUpdate =
-                CameraUpdate.makeWithArea(
-                    area = AreaRect(points = shops.map { shop -> shop.toMapPoint() }),
-                    levelLimit = -1,
-                ),
-        )
-    }
-
-    /**
-     * Kakao Maps SDK 카메라 업데이트를 콜백 없이 적용한다.
-     */
-    private fun moveCamera(
-        kakaoMap: KakaoMap,
-        cameraUpdate: CameraUpdate,
-    ) {
-        kakaoMap.moveCamera(
-            cameraUpdate,
-            callback = null,
-        )
-    }
-
-    /**
-     * 지도 엔진과 delegate 연결을 정리한다.
-     *
-     * Compose에서 `UIKitView`가 dispose될 때 호출되어 SDK 리소스가 화면 생명주기 밖에
-     * 남지 않도록 한다.
-     */
-    fun dispose() {
-        controller.pauseEngine()
-        controller.resetEngine()
-        controller.delegate = null
-        isStarted = false
-        isMapViewAdded = false
-    }
-
-    /**
      * Kakao Maps SDK 엔진 준비 후 기본 지도 뷰를 추가한다.
      */
     override fun addViews() {
         controller.addView(createDefaultMapViewInfo())
     }
+
+    /**
+     * 기본 시작 위치와 줌 레벨을 가진 지도 뷰 정보를 만든다.
+     */
+    private fun createDefaultMapViewInfo(): MapviewInfo =
+        MapviewInfo.create(
+            mapViewName,
+            DEFAULT_APP_NAME,
+            DEFAULT_VIEW_INFO_NAME,
+            defaultMapPoint(),
+            DEFAULT_ZOOM_LEVEL.toLong(),
+            true,
+        )
+
+    /**
+     * 앱 최초 진입 시 사용할 기본 지도 중심 좌표를 만든다.
+     */
+    private fun defaultMapPoint(): MapPoint =
+        MapPoint(
+            longitude = DEFAULT_LONGITUDE,
+            latitude = DEFAULT_LATITUDE,
+        )
 
     /**
      * 지도 뷰 추가 완료 후 이벤트 delegate를 연결하고 지연된 마커 렌더링을 실행한다.
@@ -252,10 +172,74 @@ class IosKakaoMapController(
     }
 
     /**
+     * 현재 지도 화면의 네 모서리를 위경도로 변환해 ViewModel에 전달할 bounds를 계산한다.
+     */
+    private fun notifyCurrentBounds(kakaoMap: KakaoMap) {
+        val width = mapViewContainer.bounds.useContents { size.width }
+        val height = mapViewContainer.bounds.useContents { size.height }
+        if (width <= 0.0 || height <= 0.0) return
+
+        onBoundsChanged(kakaoMap.visibleBounds(width, height))
+    }
+
+    /**
+     * 현재 지도 화면의 네 모서리 좌표를 포함하는 bounds를 만든다.
+     */
+    private fun KakaoMap.visibleBounds(
+        width: Double,
+        height: Double,
+    ): MapBounds {
+        val points =
+            listOf(
+                coordinateAt(CGPointMake(0.0, 0.0)),
+                coordinateAt(CGPointMake(width, 0.0)),
+                coordinateAt(CGPointMake(0.0, height)),
+                coordinateAt(CGPointMake(width, height)),
+            )
+
+        return points.toMapBounds()
+    }
+
+    /**
+     * 화면 탭 좌표를 위경도 좌표로 변환한다.
+     */
+    private fun KakaoMap.coordinateAt(point: CValue<CGPoint>): IosMapCoordinate =
+        getPosition(point)
+            .wgsCoord
+            .useContents {
+                IosMapCoordinate(
+                    latitude = latitude,
+                    longitude = longitude,
+                )
+            }
+
+    /**
+     * 좌표 목록의 최소/최대 위경도로 [MapBounds]를 만든다.
+     */
+    private fun List<IosMapCoordinate>.toMapBounds(): MapBounds =
+        MapBounds(
+            minLat = minOf { it.latitude },
+            maxLat = maxOf { it.latitude },
+            minLng = minOf { it.longitude },
+            maxLng = maxOf { it.longitude },
+        )
+
+    /**
+     * 현재 지도에 표시해야 할 매장 목록을 갱신한다.
+     *
+     * 지도 뷰가 아직 추가되지 않은 경우에는 [pendingShops]에 보관했다가 [addViewSucceeded]
+     * 이후 마커를 렌더링한다.
+     */
+    fun updateShops(shops: RamenShops) {
+        pendingShops = shops
+        renderRamenShopMarkers(shops)
+    }
+
+    /**
      * 현재 매장 목록과 기존 마커 상태를 비교해 iOS 지도 마커를 동기화한다.
      *
-     * 지도와 레이어가 준비되면 사라진 매장 마커를 먼저 제거하고, 아직 렌더링되지 않은
-     * 매장만 새 POI로 추가한다.
+     * 지도와 레이어가 준비되면 사라진 매장 마커를 먼저 제거하고
+     * 아직 렌더링되지 않은 매장만 새 POI로 추가한다.
      */
     private fun renderRamenShopMarkers(shops: RamenShops) {
         if (!isMapViewAdded) return
@@ -288,6 +272,109 @@ class IosKakaoMapController(
             setClickable(true)
         }
     }
+
+    /**
+     * 라멘 매장 마커 아이콘과 텍스트 스타일을 Kakao Maps SDK label manager에 등록한다.
+     */
+    private fun ensureMarkerStyle(labelManager: LabelManager) {
+        val poiStyle =
+            PoiStyle(
+                RamenShopMarkerConfig.STYLE_ID,
+                listOf(
+                    PerLevelPoiStyle(
+                        createMarkerIconStyle() ?: return,
+                        createMarkerTextStyle(),
+                        0.0f,
+                        0,
+                    ),
+                ),
+            )
+
+        labelManager.addPoiStyle(poiStyle)
+    }
+
+    /**
+     * 마커 이미지 리소스로 POI 아이콘 스타일을 만든다.
+     */
+    private fun createMarkerIconStyle(): PoiIconStyle? {
+        val image = UIImage.imageNamed(MARKER_IMAGE_NAME) ?: return null
+
+        return PoiIconStyle(
+            image,
+            CGPointMake(0.5, 1.0),
+            poiTransition(),
+            true,
+            true,
+            null,
+        )
+    }
+
+    /**
+     * 마커와 라벨의 등장/퇴장 애니메이션을 비활성화한 전환 값을 만든다.
+     */
+    private fun poiTransition(): CValue<PoiTransition> =
+        cValue {
+            entrance = TransitionTypeNone
+            exit = TransitionTypeNone
+        }
+
+    /**
+     * 마커 라벨 텍스트 스타일을 만든다.
+     */
+    private fun createMarkerTextStyle(): PoiTextStyle =
+        PoiTextStyle(
+            poiTransition(),
+            true,
+            true,
+            listOf(createMarkerTextLineStyle()),
+        )
+
+    /**
+     * 마커 라벨 한 줄에 적용할 글자 크기, 색상, 외곽선 스타일을 만든다.
+     */
+    private fun createMarkerTextLineStyle(): PoiTextLineStyle =
+        PoiTextLineStyle()
+            .apply {
+                textStyle =
+                    TextStyle(
+                        RamenShopMarkerConfig.LABEL_TEXT_SIZE.toULong(),
+                        markerTextColor(),
+                        RamenShopMarkerConfig.LABEL_STROKE_WIDTH.toULong(),
+                        UIColor.whiteColor,
+                        "",
+                        0,
+                        1.0f,
+                        1.0f,
+                    )
+            }
+
+    /**
+     * 매장 마커 라벨에 사용할 텍스트 색상을 UIKit 색상으로 만든다.
+     */
+    private fun markerTextColor(): UIColor =
+        UIColor.colorWithRed(
+            red = MARKER_TEXT_RED,
+            green = MARKER_TEXT_GREEN,
+            blue = MARKER_TEXT_BLUE,
+            alpha = 1.0,
+        )
+
+    /**
+     * 매장 마커 전용 label layer 생성 옵션을 만든다.
+     */
+    private fun createMarkerLayerOptions(): LabelLayerOptions =
+        LabelLayerOptions(
+            markerLayerId,
+            CompetitionTypeNone,
+            CompetitionUnitPoi,
+            OrderingTypeRank,
+            MARKER_LAYER_Z_ORDER,
+        )
+
+    /**
+     * 매장 id를 Kakao Maps SDK POI id 네임스페이스로 변환한다.
+     */
+    private fun String.toMarkerPoiId(): String = "ramen-shop-$this"
 
     /**
      * 현재 매장 목록에 더 이상 포함되지 않는 기존 POI 마커를 제거한다.
@@ -361,6 +448,108 @@ class IosKakaoMapController(
         }
 
     /**
+     * 검색 결과 또는 선택 매장을 지도 카메라의 포커스 대상으로 반영한다.
+     *
+     * 빈 목록과 동일한 포커스 요청은 무시한다. 대상이 하나면 해당 매장 중심으로 이동하고,
+     * 둘 이상이면 모든 대상이 보이도록 Kakao Maps SDK의 영역 맞춤 카메라 업데이트를 적용한다.
+     */
+    fun updateFocusShops(shops: List<RamenShop>) {
+        if (!isMapViewAdded) return
+
+        if (!shouldUpdateFocus(shops)) return
+
+        val kakaoMap = getKakaoMap() ?: return
+        lastFocusKey = shops.focusKey()
+        focusShops(kakaoMap, shops)
+    }
+
+    /**
+     * 전달된 매장 목록이 새 카메라 포커스 요청인지 확인한다.
+     */
+    private fun shouldUpdateFocus(shops: List<RamenShop>): Boolean {
+        val focusKey = shops.focusKey()
+
+        return focusKey.isNotBlank() && lastFocusKey != focusKey
+    }
+
+    /**
+     * 동일한 포커스 요청을 식별하기 위한 안정적인 key를 만든다.
+     */
+    private fun List<RamenShop>.focusKey(): String =
+        joinToString(separator = "|") { shop ->
+            "${shop.id}:${shop.location.lat}:${shop.location.lng}"
+        }
+
+    /**
+     * 매장 수에 따라 단일 중심 이동 또는 다중 영역 맞춤 이동을 선택한다.
+     */
+    private fun focusShops(
+        kakaoMap: KakaoMap,
+        shops: List<RamenShop>,
+    ) {
+        when (shops.size) {
+            1 -> moveToShop(kakaoMap, shops.first())
+            else -> fitShops(kakaoMap, shops)
+        }
+    }
+
+    /**
+     * 단일 매장을 지도 중심으로 이동한다.
+     */
+    private fun moveToShop(
+        kakaoMap: KakaoMap,
+        shop: RamenShop,
+    ) {
+        moveCamera(
+            kakaoMap = kakaoMap,
+            cameraUpdate =
+                CameraUpdate.makeWithTarget(
+                    target = shop.toMapPoint(),
+                    mapView = kakaoMap,
+                ),
+        )
+    }
+
+    /**
+     * 도메인 매장 좌표를 Kakao Maps SDK의 [MapPoint]로 변환한다.
+     */
+    private fun RamenShop.toMapPoint(): MapPoint =
+        MapPoint(
+            longitude = location.lng,
+            latitude = location.lat,
+        )
+
+    /**
+     * 여러 매장이 모두 보이도록 지도 카메라 영역을 맞춘다.
+     */
+    private fun fitShops(
+        kakaoMap: KakaoMap,
+        shops: List<RamenShop>,
+    ) {
+        moveCamera(
+            kakaoMap = kakaoMap,
+            cameraUpdate =
+                CameraUpdate.makeWithArea(
+                    area = AreaRect(points = shops.map { shop -> shop.toMapPoint() }),
+                    levelLimit = -1,
+                ),
+        )
+    }
+
+    /**
+     * Kakao Maps SDK 카메라 업데이트를 콜백 없이 적용한다.
+     */
+    private fun moveCamera(
+        kakaoMap: KakaoMap,
+        cameraUpdate: CameraUpdate,
+    ) {
+        kakaoMap.moveCamera(
+            cameraUpdate,
+            callback = null,
+        )
+    }
+
+    /**
      * Kakao Maps SDK의 POI 탭 콜백을 공통 매장 선택 콜백으로 변환한다.
      */
     override fun poiDidTappedWithKakaoMap(
@@ -387,96 +576,9 @@ class IosKakaoMapController(
     }
 
     /**
-     * 라멘 매장 마커 아이콘과 텍스트 스타일을 Kakao Maps SDK label manager에 등록한다.
-     */
-    private fun ensureMarkerStyle(labelManager: LabelManager) {
-        val poiStyle =
-            PoiStyle(
-                RamenShopMarkerConfig.STYLE_ID,
-                listOf(
-                    PerLevelPoiStyle(
-                        createMarkerIconStyle() ?: return,
-                        createMarkerTextStyle(),
-                        0.0f,
-                        0,
-                    ),
-                ),
-            )
-
-        labelManager.addPoiStyle(poiStyle)
-    }
-
-    /**
-     * 마커와 라벨의 등장/퇴장 애니메이션을 비활성화한 전환 값을 만든다.
-     */
-    private fun poiTransition(): CValue<PoiTransition> =
-        cValue {
-            entrance = TransitionTypeNone
-            exit = TransitionTypeNone
-        }
-
-    /**
-     * 매장 마커 전용 label layer 생성 옵션을 만든다.
-     */
-    private fun createMarkerLayerOptions(): LabelLayerOptions =
-        LabelLayerOptions(
-            markerLayerId,
-            CompetitionTypeNone,
-            CompetitionUnitPoi,
-            OrderingTypeRank,
-            MARKER_LAYER_Z_ORDER,
-        )
-
-    /**
-     * 현재 지도 화면의 네 모서리를 위경도로 변환해 ViewModel에 전달할 bounds를 계산한다.
-     */
-    private fun notifyCurrentBounds(kakaoMap: KakaoMap) {
-        val width = mapViewContainer.bounds.useContents { size.width }
-        val height = mapViewContainer.bounds.useContents { size.height }
-        if (width <= 0.0 || height <= 0.0) return
-
-        onBoundsChanged(kakaoMap.visibleBounds(width, height))
-    }
-
-    /**
      * 현재 컨트롤러에 등록된 Kakao 지도 뷰를 가져온다.
      */
     private fun getKakaoMap(): KakaoMap? = controller.getView(mapViewName) as? KakaoMap
-
-    /**
-     * 기본 시작 위치와 줌 레벨을 가진 지도 뷰 정보를 만든다.
-     */
-    private fun createDefaultMapViewInfo(): MapviewInfo =
-        MapviewInfo.create(
-            mapViewName,
-            DEFAULT_APP_NAME,
-            DEFAULT_VIEW_INFO_NAME,
-            defaultMapPoint(),
-            DEFAULT_ZOOM_LEVEL.toLong(),
-            true,
-        )
-
-    /**
-     * 앱 최초 진입 시 사용할 기본 지도 중심 좌표를 만든다.
-     */
-    private fun defaultMapPoint(): MapPoint =
-        MapPoint(
-            longitude = DEFAULT_LONGITUDE,
-            latitude = DEFAULT_LATITUDE,
-        )
-
-    /**
-     * 화면 탭 좌표를 위경도 좌표로 변환한다.
-     */
-    private fun KakaoMap.coordinateAt(point: CValue<CGPoint>): IosMapCoordinate =
-        getPosition(point)
-            .wgsCoord
-            .useContents {
-                IosMapCoordinate(
-                    latitude = latitude,
-                    longitude = longitude,
-                )
-            }
 
     /**
      * 탭 좌표에서 선택 가능한 거리 안에 있는 가장 가까운 매장을 찾는다.
@@ -495,120 +597,18 @@ class IosKakaoMapController(
             ?.first
 
     /**
-     * 마커 이미지 리소스로 POI 아이콘 스타일을 만든다.
+     * 지도 엔진과 delegate 연결을 정리한다.
+     *
+     * Compose에서 `UIKitView`가 dispose될 때 호출되어 SDK 리소스가 화면 생명주기 밖에
+     * 남지 않도록 한다.
      */
-    private fun createMarkerIconStyle(): PoiIconStyle? {
-        val image = UIImage.imageNamed(MARKER_IMAGE_NAME) ?: return null
-
-        return PoiIconStyle(
-            image,
-            CGPointMake(0.5, 1.0),
-            poiTransition(),
-            true,
-            true,
-            null,
-        )
+    fun dispose() {
+        controller.pauseEngine()
+        controller.resetEngine()
+        controller.delegate = null
+        isStarted = false
+        isMapViewAdded = false
     }
-
-    /**
-     * 마커 라벨 텍스트 스타일을 만든다.
-     */
-    private fun createMarkerTextStyle(): PoiTextStyle =
-        PoiTextStyle(
-            poiTransition(),
-            true,
-            true,
-            listOf(createMarkerTextLineStyle()),
-        )
-
-    /**
-     * 마커 라벨 한 줄에 적용할 글자 크기, 색상, 외곽선 스타일을 만든다.
-     */
-    private fun createMarkerTextLineStyle(): PoiTextLineStyle =
-        PoiTextLineStyle()
-            .apply {
-                textStyle =
-                    TextStyle(
-                        RamenShopMarkerConfig.LABEL_TEXT_SIZE.toULong(),
-                        markerTextColor(),
-                        RamenShopMarkerConfig.LABEL_STROKE_WIDTH.toULong(),
-                        UIColor.whiteColor,
-                        "",
-                        0,
-                        1.0f,
-                        1.0f,
-                    )
-            }
-
-    /**
-     * 현재 지도 화면의 네 모서리 좌표를 포함하는 bounds를 만든다.
-     */
-    private fun KakaoMap.visibleBounds(
-        width: Double,
-        height: Double,
-    ): MapBounds {
-        val points =
-            listOf(
-                coordinateAt(CGPointMake(0.0, 0.0)),
-                coordinateAt(CGPointMake(width, 0.0)),
-                coordinateAt(CGPointMake(0.0, height)),
-                coordinateAt(CGPointMake(width, height)),
-            )
-
-        return points.toMapBounds()
-    }
-
-    /**
-     * 좌표 목록의 최소/최대 위경도로 [MapBounds]를 만든다.
-     */
-    private fun List<IosMapCoordinate>.toMapBounds(): MapBounds =
-        MapBounds(
-            minLat = minOf { it.latitude },
-            maxLat = maxOf { it.latitude },
-            minLng = minOf { it.longitude },
-            maxLng = maxOf { it.longitude },
-        )
-
-    /**
-     * Kakao 지도 엔진을 시작할 수 있을 만큼 컨테이너가 실제 크기를 가졌는지 확인한다.
-     */
-    private fun hasMeasuredSize(): Boolean =
-        mapViewContainer.bounds.useContents {
-            size.width > 0.0 && size.height > 0.0
-        }
-
-    /**
-     * 매장 마커 라벨에 사용할 텍스트 색상을 UIKit 색상으로 만든다.
-     */
-    private fun markerTextColor(): UIColor =
-        UIColor.colorWithRed(
-            red = MARKER_TEXT_RED,
-            green = MARKER_TEXT_GREEN,
-            blue = MARKER_TEXT_BLUE,
-            alpha = 1.0,
-        )
-
-    /**
-     * 도메인 매장 좌표를 Kakao Maps SDK의 [MapPoint]로 변환한다.
-     */
-    private fun RamenShop.toMapPoint(): MapPoint =
-        MapPoint(
-            longitude = location.lng,
-            latitude = location.lat,
-        )
-
-    /**
-     * 동일한 포커스 요청을 식별하기 위한 안정적인 key를 만든다.
-     */
-    private fun List<RamenShop>.focusKey(): String =
-        joinToString(separator = "|") { shop ->
-            "${shop.id}:${shop.location.lat}:${shop.location.lng}"
-        }
-
-    /**
-     * 매장 id를 Kakao Maps SDK POI id 네임스페이스로 변환한다.
-     */
-    private fun String.toMarkerPoiId(): String = "ramen-shop-$this"
 
     companion object {
         private const val DEFAULT_APP_NAME = "openmap"
