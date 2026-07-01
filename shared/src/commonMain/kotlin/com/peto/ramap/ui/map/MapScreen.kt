@@ -47,6 +47,9 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
         onQueryChanged = { query ->
             viewModel.dispatch(MapIntent.OnQueryChanged(query))
         },
+        onSearchResultsDismissed = {
+            viewModel.dispatch(MapIntent.OnSearchResultsDismissed)
+        },
     )
 }
 
@@ -57,6 +60,7 @@ private fun MapScreen(
     onShopSelected: (RamenShop) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
+    onSearchResultsDismissed: () -> Unit,
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
     val focusManager = LocalFocusManager.current
@@ -99,7 +103,7 @@ private fun MapScreen(
                 if (selectedShop != null) {
                     onShopDetailDismissed()
                 } else {
-                    onQueryChanged("")
+                    onSearchResultsDismissed()
                 }
             },
             config = CommonBottomSheetConfig(),

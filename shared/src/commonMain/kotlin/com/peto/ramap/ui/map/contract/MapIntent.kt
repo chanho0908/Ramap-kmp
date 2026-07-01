@@ -15,6 +15,8 @@ sealed interface MapIntent : Intent {
 
     data object OnShopDetailDismissed : MapIntent
 
+    data object OnSearchResultsDismissed : MapIntent
+
     data class OnQueryChanged(
         val query: String,
     ) : MapIntent
