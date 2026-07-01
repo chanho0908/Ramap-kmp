@@ -2,6 +2,7 @@ package com.peto.ramap.ui.map.contract
 
 import com.peto.ramap.core.base.State
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopWaitingSystem
@@ -14,6 +15,7 @@ data class MapUiState(
     val searchResults: RamenShops = RamenShops(emptyMap()),
     val searchResultsQuery: SearchQuery? = null,
     val isSearchResultsDismissed: Boolean = false,
+    val filters: RamenShopFilter = RamenShopFilter(),
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
