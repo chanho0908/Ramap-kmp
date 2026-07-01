@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.map
 
 import app.cash.turbine.test
+import com.peto.ramap.coroutinesTest
 import com.peto.ramap.data.fake.FakeRamenShopRepository
 import com.peto.ramap.data.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.data.fixture.BOUNDS_FIXTURE
@@ -26,186 +27,155 @@ import kotlin.test.assertEquals
 class MapViewModelTest {
     @Test
     fun `연속 지도 영역 변경은 지연 후 마지막 영역만 조회한다`() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                val ramenShopRepository = FakeRamenShopRepository()
-                val viewModel = mapViewModel(ramenShopRepository)
-                val lastBounds =
-                    BOUNDS_FIXTURE.copy(
-                        minLat = BOUNDS_FIXTURE.minLat + 0.03,
-                        maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
-                    )
+        coroutinesTest {
+            val ramenShopRepository = FakeRamenShopRepository()
+            val viewModel = mapViewModel(ramenShopRepository)
+            val lastBounds =
+                BOUNDS_FIXTURE.copy(
+                    minLat = BOUNDS_FIXTURE.minLat + 0.03,
+                    maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
+                )
 
-                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
-                advanceTimeBy(200)
-                viewModel.dispatch(MapIntent.OnBoundsChanged(lastBounds))
-                advanceTimeBy(349)
-                runCurrent()
+            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            advanceTimeBy(200)
+            viewModel.dispatch(MapIntent.OnBoundsChanged(lastBounds))
+            advanceTimeBy(349)
+            runCurrent()
 
-                assertEquals(emptyList(), ramenShopRepository.requestedBoundsHistory)
+            assertEquals(emptyList(), ramenShopRepository.requestedBoundsHistory)
 
-                advanceTimeBy(1)
-                runCurrent()
+            advanceTimeBy(1)
+            runCurrent()
 
-                assertEquals(listOf(lastBounds), ramenShopRepository.requestedBoundsHistory)
-            } finally {
-                Dispatchers.resetMain()
-            }
+            assertEquals(listOf(lastBounds), ramenShopRepository.requestedBoundsHistory)
         }
 
     @Test
     fun `마지막 성공 조회 영역과 의미 있게 다르지 않으면 조회하지 않는다`() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                val ramenShopRepository = FakeRamenShopRepository()
-                val viewModel = mapViewModel(ramenShopRepository)
-                val nearbyBounds =
-                    BOUNDS_FIXTURE.copy(
-                        minLat = BOUNDS_FIXTURE.minLat + 0.01,
-                        maxLat = BOUNDS_FIXTURE.maxLat + 0.01,
-                    )
+        coroutinesTest {
+            val ramenShopRepository = FakeRamenShopRepository()
+            val viewModel = mapViewModel(ramenShopRepository)
+            val nearbyBounds =
+                BOUNDS_FIXTURE.copy(
+                    minLat = BOUNDS_FIXTURE.minLat + 0.01,
+                    maxLat = BOUNDS_FIXTURE.maxLat + 0.01,
+                )
 
-                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
-                advanceTimeBy(350)
-                runCurrent()
-                viewModel.dispatch(MapIntent.OnBoundsChanged(nearbyBounds))
-                advanceTimeBy(350)
-                runCurrent()
+            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            advanceTimeBy(350)
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnBoundsChanged(nearbyBounds))
+            advanceTimeBy(350)
+            runCurrent()
 
-                assertEquals(listOf(BOUNDS_FIXTURE), ramenShopRepository.requestedBoundsHistory)
-            } finally {
-                Dispatchers.resetMain()
-            }
+            assertEquals(listOf(BOUNDS_FIXTURE), ramenShopRepository.requestedBoundsHistory)
         }
 
     @Test
     fun `마지막 성공 조회 영역과 의미 있게 다르면 새로 조회한다`() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                val ramenShopRepository = FakeRamenShopRepository()
-                val viewModel = mapViewModel(ramenShopRepository)
-                val changedBounds =
-                    BOUNDS_FIXTURE.copy(
-                        minLat = BOUNDS_FIXTURE.minLat + 0.03,
-                        maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
-                    )
+        coroutinesTest {
+            val ramenShopRepository = FakeRamenShopRepository()
+            val viewModel = mapViewModel(ramenShopRepository)
+            val changedBounds =
+                BOUNDS_FIXTURE.copy(
+                    minLat = BOUNDS_FIXTURE.minLat + 0.03,
+                    maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
+                )
 
-                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
-                advanceTimeBy(350)
-                runCurrent()
-                viewModel.dispatch(MapIntent.OnBoundsChanged(changedBounds))
-                advanceTimeBy(350)
-                runCurrent()
+            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            advanceTimeBy(350)
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnBoundsChanged(changedBounds))
+            advanceTimeBy(350)
+            runCurrent()
 
-                assertEquals(listOf(BOUNDS_FIXTURE, changedBounds), ramenShopRepository.requestedBoundsHistory)
-            } finally {
-                Dispatchers.resetMain()
-            }
+            assertEquals(
+                listOf(BOUNDS_FIXTURE, changedBounds),
+                ramenShopRepository.requestedBoundsHistory,
+            )
         }
 
     @Test
     fun `조회 결과가 현재 가게 목록과 같으면 UI 상태를 다시 방출하지 않는다`() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                val shops = RamenShops(listOf(ramenShopFixture()).associateBy { it.id })
-                val ramenShopRepository = FakeRamenShopRepository(result = shops)
-                val viewModel = mapViewModel(ramenShopRepository)
-                val changedBounds =
-                    BOUNDS_FIXTURE.copy(
-                        minLat = BOUNDS_FIXTURE.minLat + 0.03,
-                        maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
-                    )
+        coroutinesTest {
+            val shops = RamenShops(listOf(ramenShopFixture()).associateBy { it.id })
+            val ramenShopRepository = FakeRamenShopRepository(result = shops)
+            val viewModel = mapViewModel(ramenShopRepository)
+            val changedBounds =
+                BOUNDS_FIXTURE.copy(
+                    minLat = BOUNDS_FIXTURE.minLat + 0.03,
+                    maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
+                )
 
-                viewModel.uiState.test {
-                    assertEquals(RamenShops(emptyMap()), awaitItem().shops)
+            viewModel.uiState.test {
+                assertEquals(RamenShops(emptyMap()), awaitItem().shops)
 
-                    viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
-                    advanceTimeBy(350)
-                    runCurrent()
-                    assertEquals(shops, awaitItem().shops)
+                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+                advanceTimeBy(350)
+                runCurrent()
+                assertEquals(shops, awaitItem().shops)
 
-                    viewModel.dispatch(MapIntent.OnBoundsChanged(changedBounds))
-                    advanceTimeBy(350)
-                    runCurrent()
-                    expectNoEvents()
-                }
-            } finally {
-                Dispatchers.resetMain()
+                viewModel.dispatch(MapIntent.OnBoundsChanged(changedBounds))
+                advanceTimeBy(350)
+                runCurrent()
+                expectNoEvents()
             }
         }
 
     @Test
     fun `가게를 선택하면 상세를 즉시 열고 웨이팅 시스템을 조회한다`() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                val shop = ramenShopFixture()
-                val waitingSystem = waitingSystemFixture(shopId = shop.id)
-                val waitingSystemRepository = FakeShopWaitingSystemRepository(result = waitingSystem)
-                val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val waitingSystem = waitingSystemFixture(shopId = shop.id)
+            val waitingSystemRepository =
+                FakeShopWaitingSystemRepository(result = waitingSystem)
+            val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
 
-                viewModel.dispatch(MapIntent.OnShopSelected(shop))
-                runCurrent()
+            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            runCurrent()
 
-                assertEquals(shop, viewModel.uiState.value.selectedShop)
-                assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
-                assertEquals(waitingSystem, viewModel.uiState.value.shopWaiting[shop.id])
-            } finally {
-                Dispatchers.resetMain()
-            }
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(waitingSystem, viewModel.uiState.value.shopWaiting[shop.id])
         }
 
     @Test
     fun `웨이팅 시스템 조회 결과가 없어도 선택한 가게 상세는 유지한다`() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                val shop = ramenShopFixture()
-                val waitingSystemRepository = FakeShopWaitingSystemRepository(result = null)
-                val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val waitingSystemRepository = FakeShopWaitingSystemRepository(result = null)
+            val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
 
-                viewModel.dispatch(MapIntent.OnShopSelected(shop))
-                runCurrent()
+            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            runCurrent()
 
-                val containsWaitingSystem =
-                    viewModel
-                        .uiState
-                        .value
-                        .shopWaiting
-                        .containsKey(shop.id)
+            val containsWaitingSystem =
+                viewModel
+                    .uiState
+                    .value
+                    .shopWaiting
+                    .containsKey(shop.id)
 
-                assertEquals(shop, viewModel.uiState.value.selectedShop)
-                assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
-                assertEquals(true, containsWaitingSystem)
-                assertEquals(null, viewModel.uiState.value.shopWaiting[shop.id])
-            } finally {
-                Dispatchers.resetMain()
-            }
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(true, containsWaitingSystem)
+            assertEquals(null, viewModel.uiState.value.shopWaiting[shop.id])
         }
 
     @Test
     fun `이미 조회한 가게를 다시 선택하면 웨이팅 시스템을 중복 조회하지 않는다`() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                val shop = ramenShopFixture()
-                val waitingSystemRepository =
-                    FakeShopWaitingSystemRepository(result = waitingSystemFixture(shop.id))
-                val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val waitingSystemRepository =
+                FakeShopWaitingSystemRepository(result = waitingSystemFixture(shop.id))
+            val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
 
-                viewModel.dispatch(MapIntent.OnShopSelected(shop))
-                runCurrent()
-                viewModel.dispatch(MapIntent.OnShopSelected(shop))
-                runCurrent()
+            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            runCurrent()
 
-                assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
-            } finally {
-                Dispatchers.resetMain()
-            }
+            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
         }
 
     @Test
