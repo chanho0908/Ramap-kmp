@@ -1,4 +1,4 @@
-package com.peto.ramap.data.fixture
+package com.peto.ramap.fixture
 
 import com.peto.ramap.data.model.RamenShopResponse
 

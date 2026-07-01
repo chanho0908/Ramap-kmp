@@ -1,8 +1,8 @@
 package com.peto.ramap.data.repository
 
-import com.peto.ramap.data.fake.FakeRamenShopDataSource
-import com.peto.ramap.data.fixture.BOUNDS_FIXTURE
-import com.peto.ramap.data.fixture.ramenShopResponseFixture
+import com.peto.ramap.fake.FakeRamenShopDataSource
+import com.peto.ramap.fixture.BOUNDS_FIXTURE
+import com.peto.ramap.fixture.ramenShopResponseFixture
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.RamenShop

@@ -2,11 +2,11 @@ package com.peto.ramap.ui.map
 
 import app.cash.turbine.test
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.data.fake.FakeRamenShopRepository
-import com.peto.ramap.data.fake.FakeShopWaitingSystemRepository
-import com.peto.ramap.data.fixture.BOUNDS_FIXTURE
-import com.peto.ramap.data.fixture.ramenShopFixture
-import com.peto.ramap.data.fixture.waitingSystemFixture
+import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopWaitingSystemRepository
+import com.peto.ramap.fixture.BOUNDS_FIXTURE
+import com.peto.ramap.fixture.ramenShopFixture
+import com.peto.ramap.fixture.waitingSystemFixture
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository

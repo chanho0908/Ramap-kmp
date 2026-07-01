@@ -1,4 +1,4 @@
-package com.peto.ramap.data.fake
+package com.peto.ramap.fake
 
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.model.RamenShopResponse
