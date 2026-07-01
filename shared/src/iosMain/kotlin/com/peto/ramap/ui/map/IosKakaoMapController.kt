@@ -45,25 +45,14 @@ import platform.UIKit.UIColor
 import platform.UIKit.UIImage
 import platform.darwin.NSObject
 
-private const val DEFAULT_APP_NAME = "openmap"
-private const val DEFAULT_VIEW_INFO_NAME = "map"
-private const val DEFAULT_LONGITUDE = 127.108621
-private const val DEFAULT_LATITUDE = 37.402005
-private const val DEFAULT_ZOOM_LEVEL = 15
-private const val MARKER_IMAGE_NAME = "marker_ramen"
-private const val MARKER_LAYER_Z_ORDER = 10L
-private const val MARKER_TEXT_RED = 0x33 / 255.0
-private const val MARKER_TEXT_GREEN = 0x33 / 255.0
-private const val MARKER_TEXT_BLUE = 0x33 / 255.0
-private const val MARKER_TAP_RADIUS_METERS = 80.0
-private const val EMPTY_FOCUS_KEY = ""
-
 /**
- * iOS Kakao Maps SDK의 생명주기, 마커 렌더링, 카메라 이동을 Compose 상태와 연결하는 컨트롤러다.
+ * iOS Kakao Maps SDK의 생명주기, 마커 렌더링, 카메라 이동을 Compose 상태와 연결하는 컨트롤러
  *
- * [KakaoMapView]의 `UIKitView`에서 생성되어 SDK 엔진을 준비하고, 공통 UI 상태에서 내려오는
- * 매장 목록을 POI 마커로 렌더링한다. 지도 카메라가 멈출 때는 현재 화면 영역을 [MapBounds]로
- * 계산해 공통 ViewModel에 전달하고, 마커 또는 지도 탭으로 선택된 매장은 [onShopClick]으로
+ * [KakaoMapView]의 `UIKitView`에서 생성되어 SDK 엔진을 준비하고 공통 UI 상태에서 내려오는
+ * 매장 목록을 마커로 렌더링한다.
+ *
+ * 지도 카메라가 멈출 때는 현재 화면 영역을 [MapBounds]로
+ * 계산해 ViewModel에 전달하고 마커 또는 지도 탭으로 선택된 매장은 [onShopClick]으로
  * 다시 올려 보낸다.
  *
  * 검색 결과나 상세 선택으로 전달되는 focus 대상은 iOS SDK의 [CameraUpdate]로 변환해 단일
@@ -106,12 +95,7 @@ class IosKakaoMapController(
     fun start() {
         if (isStarted || !hasMeasuredSize()) return
 
-        controller.delegate = this
-        val prepared = controller.prepareEngine()
-        if (!prepared) return
-
-        isStarted = true
-        controller.activateEngine()
+        startEngine()
     }
 
     /**
@@ -134,12 +118,40 @@ class IosKakaoMapController(
     fun updateFocusShops(shops: List<RamenShop>) {
         if (!isMapViewAdded) return
 
+        if (!shouldUpdateFocus(shops)) return
+
+        val kakaoMap = getKakaoMap() ?: return
+        lastFocusKey = shops.focusKey()
+        focusShops(kakaoMap, shops)
+    }
+
+    /**
+     * Kakao Maps SDK 엔진을 준비하고 활성화 상태로 전환한다.
+     */
+    private fun startEngine() {
+        controller.delegate = this
+        if (!controller.prepareEngine()) return
+
+        isStarted = true
+        controller.activateEngine()
+    }
+
+    /**
+     * 전달된 매장 목록이 새 카메라 포커스 요청인지 확인한다.
+     */
+    private fun shouldUpdateFocus(shops: List<RamenShop>): Boolean {
         val focusKey = shops.focusKey()
-        if (focusKey.isBlank() || lastFocusKey == focusKey) return
 
-        val kakaoMap = controller.getView(mapViewName) as? KakaoMap ?: return
-        lastFocusKey = focusKey
+        return focusKey.isNotBlank() && lastFocusKey != focusKey
+    }
 
+    /**
+     * 매장 수에 따라 단일 중심 이동 또는 다중 영역 맞춤 이동을 선택한다.
+     */
+    private fun focusShops(
+        kakaoMap: KakaoMap,
+        shops: List<RamenShop>,
+    ) {
         when (shops.size) {
             1 -> moveToShop(kakaoMap, shops.first())
             else -> fitShops(kakaoMap, shops)
@@ -153,12 +165,13 @@ class IosKakaoMapController(
         kakaoMap: KakaoMap,
         shop: RamenShop,
     ) {
-        kakaoMap.moveCamera(
-            CameraUpdate.makeWithTarget(
-                target = shop.toMapPoint(),
-                mapView = kakaoMap,
-            ),
-            callback = null,
+        moveCamera(
+            kakaoMap = kakaoMap,
+            cameraUpdate =
+                CameraUpdate.makeWithTarget(
+                    target = shop.toMapPoint(),
+                    mapView = kakaoMap,
+                ),
         )
     }
 
@@ -169,11 +182,25 @@ class IosKakaoMapController(
         kakaoMap: KakaoMap,
         shops: List<RamenShop>,
     ) {
+        moveCamera(
+            kakaoMap = kakaoMap,
+            cameraUpdate =
+                CameraUpdate.makeWithArea(
+                    area = AreaRect(points = shops.map { shop -> shop.toMapPoint() }),
+                    levelLimit = -1,
+                ),
+        )
+    }
+
+    /**
+     * Kakao Maps SDK 카메라 업데이트를 콜백 없이 적용한다.
+     */
+    private fun moveCamera(
+        kakaoMap: KakaoMap,
+        cameraUpdate: CameraUpdate,
+    ) {
         kakaoMap.moveCamera(
-            CameraUpdate.makeWithArea(
-                area = AreaRect(points = shops.map { shop -> shop.toMapPoint() }),
-                levelLimit = -1,
-            ),
+            cameraUpdate,
             callback = null,
         )
     }
@@ -196,22 +223,7 @@ class IosKakaoMapController(
      * Kakao Maps SDK 엔진 준비 후 기본 지도 뷰를 추가한다.
      */
     override fun addViews() {
-        val defaultPosition =
-            MapPoint(
-                longitude = DEFAULT_LONGITUDE,
-                latitude = DEFAULT_LATITUDE,
-            )
-        val viewInfo =
-            MapviewInfo.create(
-                mapViewName,
-                DEFAULT_APP_NAME,
-                DEFAULT_VIEW_INFO_NAME,
-                defaultPosition,
-                DEFAULT_ZOOM_LEVEL.toLong(),
-                true,
-            )
-
-        controller.addView(viewInfo)
+        controller.addView(createDefaultMapViewInfo())
     }
 
     /**
@@ -221,7 +233,7 @@ class IosKakaoMapController(
         viewName: String,
         viewInfoName: String,
     ) {
-        val kakaoMap = controller.getView(mapViewName) as? KakaoMap ?: return
+        val kakaoMap = getKakaoMap() ?: return
 
         isMapViewAdded = true
         kakaoMap.eventDelegate = this
@@ -248,7 +260,7 @@ class IosKakaoMapController(
     private fun renderRamenShopMarkers(shops: RamenShops) {
         if (!isMapViewAdded) return
 
-        val kakaoMap = controller.getView(mapViewName) as? KakaoMap ?: return
+        val kakaoMap = getKakaoMap() ?: return
         val layer = prepareMarkerLayer(kakaoMap) ?: return
 
         removeStaleMarkers(
@@ -367,27 +379,9 @@ class IosKakaoMapController(
      * 렌더링된 매장 좌표의 거리를 비교해 보조 선택 경로를 제공한다.
      */
     private fun selectNearestShopAt(point: CValue<CGPoint>) {
-        val kakaoMap = controller.getView(mapViewName) as? KakaoMap ?: return
-        val tappedCoordinate =
-            kakaoMap
-                .getPosition(point)
-                .wgsCoord
-                .useContents {
-                    IosMapCoordinate(
-                        latitude = latitude,
-                        longitude = longitude,
-                    )
-                }
-
-        val shop =
-            shopsByPoiId
-                .values
-                .map { ramenShop ->
-                    ramenShop to tappedCoordinate.distanceTo(ramenShop.location.lat, ramenShop.location.lng)
-                }.minByOrNull { (_, distance) -> distance }
-                ?.takeIf { (_, distance) -> distance <= MARKER_TAP_RADIUS_METERS }
-                ?.first
-                ?: return
+        val kakaoMap = getKakaoMap() ?: return
+        val tappedCoordinate = kakaoMap.coordinateAt(point)
+        val shop = findNearestShop(tappedCoordinate) ?: return
 
         onShopClick(shop)
     }
@@ -396,46 +390,13 @@ class IosKakaoMapController(
      * 라멘 매장 마커 아이콘과 텍스트 스타일을 Kakao Maps SDK label manager에 등록한다.
      */
     private fun ensureMarkerStyle(labelManager: LabelManager) {
-        val image =
-            UIImage.imageNamed(MARKER_IMAGE_NAME) ?: return
-        val iconStyle =
-            PoiIconStyle(
-                image,
-                CGPointMake(0.5, 1.0),
-                poiTransition(),
-                true,
-                true,
-                null,
-            )
-        val textLineStyle =
-            PoiTextLineStyle()
-                .apply {
-                    textStyle =
-                        TextStyle(
-                            RamenShopMarkerConfig.LABEL_TEXT_SIZE.toULong(),
-                            markerTextColor(),
-                            RamenShopMarkerConfig.LABEL_STROKE_WIDTH.toULong(),
-                            UIColor.whiteColor,
-                            "",
-                            0,
-                            1.0f,
-                            1.0f,
-                        )
-                }
-        val textStyle =
-            PoiTextStyle(
-                poiTransition(),
-                true,
-                true,
-                listOf(textLineStyle),
-            )
         val poiStyle =
             PoiStyle(
                 RamenShopMarkerConfig.STYLE_ID,
                 listOf(
                     PerLevelPoiStyle(
-                        iconStyle,
-                        textStyle,
+                        createMarkerIconStyle() ?: return,
+                        createMarkerTextStyle(),
                         0.0f,
                         0,
                     ),
@@ -474,30 +435,139 @@ class IosKakaoMapController(
         val height = mapViewContainer.bounds.useContents { size.height }
         if (width <= 0.0 || height <= 0.0) return
 
-        val points =
-            listOf(
-                kakaoMap.getPosition(CGPointMake(0.0, 0.0)),
-                kakaoMap.getPosition(CGPointMake(width, 0.0)),
-                kakaoMap.getPosition(CGPointMake(0.0, height)),
-                kakaoMap.getPosition(CGPointMake(width, height)),
-            ).map { point ->
-                point.wgsCoord.useContents {
-                    IosMapCoordinate(
-                        latitude = latitude,
-                        longitude = longitude,
-                    )
-                }
+        onBoundsChanged(kakaoMap.visibleBounds(width, height))
+    }
+
+    /**
+     * 현재 컨트롤러에 등록된 Kakao 지도 뷰를 가져온다.
+     */
+    private fun getKakaoMap(): KakaoMap? = controller.getView(mapViewName) as? KakaoMap
+
+    /**
+     * 기본 시작 위치와 줌 레벨을 가진 지도 뷰 정보를 만든다.
+     */
+    private fun createDefaultMapViewInfo(): MapviewInfo =
+        MapviewInfo.create(
+            mapViewName,
+            DEFAULT_APP_NAME,
+            DEFAULT_VIEW_INFO_NAME,
+            defaultMapPoint(),
+            DEFAULT_ZOOM_LEVEL.toLong(),
+            true,
+        )
+
+    /**
+     * 앱 최초 진입 시 사용할 기본 지도 중심 좌표를 만든다.
+     */
+    private fun defaultMapPoint(): MapPoint =
+        MapPoint(
+            longitude = DEFAULT_LONGITUDE,
+            latitude = DEFAULT_LATITUDE,
+        )
+
+    /**
+     * 화면 탭 좌표를 위경도 좌표로 변환한다.
+     */
+    private fun KakaoMap.coordinateAt(point: CValue<CGPoint>): IosMapCoordinate =
+        getPosition(point)
+            .wgsCoord
+            .useContents {
+                IosMapCoordinate(
+                    latitude = latitude,
+                    longitude = longitude,
+                )
             }
 
-        onBoundsChanged(
-            MapBounds(
-                minLat = points.minOf { it.latitude },
-                maxLat = points.maxOf { it.latitude },
-                minLng = points.minOf { it.longitude },
-                maxLng = points.maxOf { it.longitude },
-            ),
+    /**
+     * 탭 좌표에서 선택 가능한 거리 안에 있는 가장 가까운 매장을 찾는다.
+     */
+    private fun findNearestShop(tappedCoordinate: IosMapCoordinate): RamenShop? =
+        shopsByPoiId
+            .values
+            .map { shop ->
+                shop to
+                    tappedCoordinate.distanceTo(
+                        shop.location.lat,
+                        shop.location.lng,
+                    )
+            }.minByOrNull { (_, distance) -> distance }
+            ?.takeIf { (_, distance) -> distance <= MARKER_TAP_RADIUS_METERS }
+            ?.first
+
+    /**
+     * 마커 이미지 리소스로 POI 아이콘 스타일을 만든다.
+     */
+    private fun createMarkerIconStyle(): PoiIconStyle? {
+        val image = UIImage.imageNamed(MARKER_IMAGE_NAME) ?: return null
+
+        return PoiIconStyle(
+            image,
+            CGPointMake(0.5, 1.0),
+            poiTransition(),
+            true,
+            true,
+            null,
         )
     }
+
+    /**
+     * 마커 라벨 텍스트 스타일을 만든다.
+     */
+    private fun createMarkerTextStyle(): PoiTextStyle =
+        PoiTextStyle(
+            poiTransition(),
+            true,
+            true,
+            listOf(createMarkerTextLineStyle()),
+        )
+
+    /**
+     * 마커 라벨 한 줄에 적용할 글자 크기, 색상, 외곽선 스타일을 만든다.
+     */
+    private fun createMarkerTextLineStyle(): PoiTextLineStyle =
+        PoiTextLineStyle()
+            .apply {
+                textStyle =
+                    TextStyle(
+                        RamenShopMarkerConfig.LABEL_TEXT_SIZE.toULong(),
+                        markerTextColor(),
+                        RamenShopMarkerConfig.LABEL_STROKE_WIDTH.toULong(),
+                        UIColor.whiteColor,
+                        "",
+                        0,
+                        1.0f,
+                        1.0f,
+                    )
+            }
+
+    /**
+     * 현재 지도 화면의 네 모서리 좌표를 포함하는 bounds를 만든다.
+     */
+    private fun KakaoMap.visibleBounds(
+        width: Double,
+        height: Double,
+    ): MapBounds {
+        val points =
+            listOf(
+                coordinateAt(CGPointMake(0.0, 0.0)),
+                coordinateAt(CGPointMake(width, 0.0)),
+                coordinateAt(CGPointMake(0.0, height)),
+                coordinateAt(CGPointMake(width, height)),
+            )
+
+        return points.toMapBounds()
+    }
+
+    /**
+     * 좌표 목록의 최소/최대 위경도로 [MapBounds]를 만든다.
+     */
+    private fun List<IosMapCoordinate>.toMapBounds(): MapBounds =
+        MapBounds(
+            minLat = minOf { it.latitude },
+            maxLat = maxOf { it.latitude },
+            minLng = minOf { it.longitude },
+            maxLng = maxOf { it.longitude },
+        )
 
     /**
      * Kakao 지도 엔진을 시작할 수 있을 만큼 컨테이너가 실제 크기를 가졌는지 확인한다.
@@ -539,4 +609,19 @@ class IosKakaoMapController(
      * 매장 id를 Kakao Maps SDK POI id 네임스페이스로 변환한다.
      */
     private fun String.toMarkerPoiId(): String = "ramen-shop-$this"
+
+    companion object {
+        private const val DEFAULT_APP_NAME = "openmap"
+        private const val DEFAULT_VIEW_INFO_NAME = "map"
+        private const val DEFAULT_LONGITUDE = 127.108621
+        private const val DEFAULT_LATITUDE = 37.402005
+        private const val DEFAULT_ZOOM_LEVEL = 15
+        private const val MARKER_IMAGE_NAME = "marker_ramen"
+        private const val MARKER_LAYER_Z_ORDER = 10L
+        private const val MARKER_TEXT_RED = 0x33 / 255.0
+        private const val MARKER_TEXT_GREEN = 0x33 / 255.0
+        private const val MARKER_TEXT_BLUE = 0x33 / 255.0
+        private const val MARKER_TAP_RADIUS_METERS = 80.0
+        private const val EMPTY_FOCUS_KEY = ""
+    }
 }

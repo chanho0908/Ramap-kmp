@@ -13,12 +13,13 @@ import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 
 /**
- * Compose의 [UIKitView] 안에서 Kakao Maps SDK의 [KMViewContainer]를 담는 UIKit 컨테이너다.
+ * Compose의 [UIKitView] 안에서 Kakao Maps SDK의 [KMViewContainer]를 담는 UIKit 컨테이너
  *
  * Compose가 전달한 레이아웃 크기를 Kakao 지도 컨테이너에 반영하고, 지도 엔진이 실제 크기를
- * 가진 뒤 시작될 수 있도록 [onMeasured]를 호출한다. Kakao Maps SDK의 POI 탭 콜백이 iOS
- * interop 환경에서 안정적으로 전달되지 않는 경우를 보완하기 위해 단일 탭 위치도 [onTap]으로
- * 전달한다.
+ * 가진 뒤 시작될 수 있도록 [onMeasured]를 호출한다.
+ *
+ * Kakao Maps SDK의 POI 탭 콜백이 iOS interop 환경에서 안정적으로 전달되지 않는 경우를 보완하기 위해
+ * 단일 탭 위치도 [onTap]으로 전달한다.
  *
  * @param mapViewContainer Kakao Maps SDK가 지도 렌더링에 사용하는 네이티브 컨테이너.
  * @param onMeasured 컨테이너 크기 측정과 레이아웃 적용이 끝난 뒤 호출되는 콜백.
