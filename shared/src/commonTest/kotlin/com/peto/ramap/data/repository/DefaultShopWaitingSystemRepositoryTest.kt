@@ -1,5 +1,6 @@
 package com.peto.ramap.data.repository
 
+import com.peto.ramap.data.fake.FakeShopWaitingSystemDataSource
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
