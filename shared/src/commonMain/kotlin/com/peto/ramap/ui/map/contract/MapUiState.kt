@@ -13,6 +13,7 @@ data class MapUiState(
     val shopWaiting: Map<String, ShopWaitingSystem?> = emptyMap(),
     val searchResults: RamenShops = RamenShops(emptyMap()),
     val searchResultsQuery: SearchQuery? = null,
+    val isSearchResultsDismissed: Boolean = false,
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
@@ -49,6 +50,7 @@ data class MapUiState(
     val showSearchResults: Boolean
         get() =
             selectedShop == null &&
+                !isSearchResultsDismissed &&
                 query.isNotBlank() &&
                 searchResultShops.size > 1
 
