@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+
 package com.peto.ramap.ui.map
 
 import cocoapods.KakaoMapsSDK.AreaRect
@@ -45,6 +47,19 @@ import platform.UIKit.UIColor
 import platform.UIKit.UIImage
 import platform.darwin.NSObject
 
+private const val DEFAULT_APP_NAME = "openmap"
+private const val DEFAULT_VIEW_INFO_NAME = "map"
+private const val DEFAULT_LONGITUDE = 127.108621
+private const val DEFAULT_LATITUDE = 37.402005
+private const val DEFAULT_ZOOM_LEVEL = 15
+private const val MARKER_IMAGE_NAME = "marker_ramen"
+private const val MARKER_LAYER_Z_ORDER = 10L
+private const val MARKER_TEXT_RED = 0x33 / 255.0
+private const val MARKER_TEXT_GREEN = 0x33 / 255.0
+private const val MARKER_TEXT_BLUE = 0x33 / 255.0
+private const val MARKER_TAP_RADIUS_METERS = 80.0
+private const val EMPTY_FOCUS_KEY = ""
+
 /**
  * iOS Kakao Maps SDK의 생명주기, 마커 렌더링, 카메라 이동을 Compose 상태와 연결하는 컨트롤러
  *
@@ -61,7 +76,6 @@ import platform.darwin.NSObject
  * @param onBoundsChanged 현재 지도 화면 영역이 바뀌었을 때 호출되는 콜백.
  * @param onShopClick 지도 위 매장 마커가 선택되었을 때 호출되는 콜백.
  */
-@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 class IosKakaoMapController(
     private val onBoundsChanged: (MapBounds) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
@@ -608,20 +622,5 @@ class IosKakaoMapController(
         controller.delegate = null
         isStarted = false
         isMapViewAdded = false
-    }
-
-    companion object {
-        private const val DEFAULT_APP_NAME = "openmap"
-        private const val DEFAULT_VIEW_INFO_NAME = "map"
-        private const val DEFAULT_LONGITUDE = 127.108621
-        private const val DEFAULT_LATITUDE = 37.402005
-        private const val DEFAULT_ZOOM_LEVEL = 15
-        private const val MARKER_IMAGE_NAME = "marker_ramen"
-        private const val MARKER_LAYER_Z_ORDER = 10L
-        private const val MARKER_TEXT_RED = 0x33 / 255.0
-        private const val MARKER_TEXT_GREEN = 0x33 / 255.0
-        private const val MARKER_TEXT_BLUE = 0x33 / 255.0
-        private const val MARKER_TAP_RADIUS_METERS = 80.0
-        private const val EMPTY_FOCUS_KEY = ""
     }
 }
