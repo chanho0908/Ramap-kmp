@@ -388,6 +388,41 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `검색 결과 바텀시트를 닫아도 검색어와 검색 결과는 유지한다`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val searchShops =
+                    RamenShops(
+                        listOf(
+                            ramenShopFixture().copy(id = "search-shop-1"),
+                            ramenShopFixture().copy(id = "search-shop-2"),
+                        ).associateBy { it.id },
+                    )
+                val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
+                val viewModel = mapViewModel(ramenShopRepository)
+
+                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                advanceTimeBy(300)
+                runCurrent()
+
+                assertEquals(true, viewModel.uiState.value.showSearchResults)
+                assertEquals(true, viewModel.uiState.value.showBottomSheet)
+
+                viewModel.dispatch(MapIntent.OnSearchResultsDismissed)
+                runCurrent()
+
+                assertEquals("라멘", viewModel.uiState.value.query)
+                assertEquals(searchShops, viewModel.uiState.value.searchResults)
+                assertEquals(searchShops, viewModel.uiState.value.markerShops)
+                assertEquals(false, viewModel.uiState.value.showSearchResults)
+                assertEquals(false, viewModel.uiState.value.showBottomSheet)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
     fun `검색어가 비어 있으면 검색 결과를 비우고 현재 지도 영역 매장을 보여준다`() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))

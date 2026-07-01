@@ -29,6 +29,7 @@ class MapViewModel(
             is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
             is MapIntent.OnShopSelected -> selectShop(intent.shop)
             is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
+            is MapIntent.OnSearchResultsDismissed -> dismissSearchResults()
             is MapIntent.OnQueryChanged -> updateQuery(intent.query)
         }
     }
@@ -42,8 +43,17 @@ class MapViewModel(
         reduce { copy(selectedShop = null) }
     }
 
+    private fun dismissSearchResults() {
+        reduce { copy(isSearchResultsDismissed = true) }
+    }
+
     private fun updateQuery(query: String) {
-        reduce { copy(query = query) }
+        reduce {
+            copy(
+                query = query,
+                isSearchResultsDismissed = false,
+            )
+        }
         scheduleSearch(SearchQuery(query).normalizeShopSearchQuery())
     }
 
@@ -75,6 +85,7 @@ class MapViewModel(
             copy(
                 searchResults = RamenShops(emptyMap()),
                 searchResultsQuery = null,
+                isSearchResultsDismissed = false,
             )
         }
     }
