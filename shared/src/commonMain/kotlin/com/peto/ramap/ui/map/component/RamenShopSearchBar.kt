@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -82,6 +83,23 @@ fun RamenShopSearchBar(
                 color = GrayColor.C400,
                 style = AppTextStyle.B2,
             )
+        },
+        trailingIcon = {
+            if (internalValue.isNotEmpty()) {
+                IconButton(
+                    onClick = {
+                        internalValue = ""
+                        lastCommitted = ""
+                        onQueryChange("")
+                    },
+                ) {
+                    Text(
+                        text = "×",
+                        fontSize = 22.sp,
+                        color = GrayColor.C400,
+                    )
+                }
+            }
         },
         colors =
             TextFieldDefaults.colors(

@@ -105,6 +105,10 @@ class MapViewModel(
             query = query,
             result = result,
         )
+
+        result.value.values.singleOrNull()?.let { shop ->
+            selectShop(shop)
+        }
     }
 
     private fun reduceSearchResult(
