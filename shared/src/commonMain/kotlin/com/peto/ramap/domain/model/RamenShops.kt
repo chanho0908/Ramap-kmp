@@ -7,4 +7,17 @@ data class RamenShops(
         value.values.filterNot { shop ->
             shop.id in renderedShopIds
         }
+
+    fun filterByCategory(filter: RamenShopFilter): RamenShops {
+        if (filter.isEmpty) return this
+        return copy(
+            value =
+                value
+                    .filterValues { shop ->
+                        shop.menuCategories.any { category ->
+                            category in filter.values
+                        }
+                    },
+        )
+    }
 }

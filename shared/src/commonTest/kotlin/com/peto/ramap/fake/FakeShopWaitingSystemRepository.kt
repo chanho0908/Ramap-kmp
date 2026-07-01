@@ -1,4 +1,4 @@
-package com.peto.ramap.data.fake
+package com.peto.ramap.fake
 
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository

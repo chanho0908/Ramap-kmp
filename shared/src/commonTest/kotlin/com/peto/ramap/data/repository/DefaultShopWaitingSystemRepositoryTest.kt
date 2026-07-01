@@ -1,9 +1,9 @@
 package com.peto.ramap.data.repository
 
-import com.peto.ramap.data.fake.FakeShopWaitingSystemDataSource
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
+import com.peto.ramap.fake.FakeShopWaitingSystemDataSource
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
