@@ -2,11 +2,17 @@ package com.peto.ramap.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.result.ActivityResultLauncher
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.kakao.vectormap.KakaoMap
 
@@ -26,12 +32,36 @@ internal class LocationProvider(
     fun ensureLocationPermission(
         permissionLauncher: ActivityResultLauncher<Array<String>>,
         onGranted: () -> Unit,
+        onBlocked: () -> Unit = {},
     ) {
         if (hasLocationPermission()) {
             onGranted()
+        } else if (isLocationPermissionBlocked()) {
+            onBlocked()
         } else {
+            markLocationPermissionRequested()
             permissionLauncher.launch(LOCATION_PERMISSIONS)
         }
+    }
+
+    fun isLocationPermissionBlocked(): Boolean {
+        val activity = context.findActivity() ?: return false
+
+        return hasRequestedLocationPermission() &&
+            !hasLocationPermission() &&
+            LOCATION_PERMISSIONS.none { permission ->
+                ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+            }
+    }
+
+    fun openAppSettings() {
+        val intent =
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null),
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        context.startActivity(intent)
     }
 
     fun moveToLastKnownLocation(
@@ -46,7 +76,7 @@ internal class LocationProvider(
         permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
-    private fun hasLocationPermission(): Boolean =
+    fun hasLocationPermission(): Boolean =
         ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -73,7 +103,30 @@ internal class LocationProvider(
             }.maxByOrNull { it.time }
     }
 
+    private fun hasRequestedLocationPermission(): Boolean =
+        context
+            .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_LOCATION_PERMISSION_REQUESTED, false)
+
+    private fun markLocationPermissionRequested() {
+        context
+            .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_LOCATION_PERMISSION_REQUESTED, true)
+            .apply()
+    }
+
+    private fun Context.findActivity(): Activity? =
+        when (this) {
+            is Activity -> this
+            is ContextWrapper -> baseContext.findActivity()
+            else -> null
+        }
+
     private companion object {
+        private const val PREF_NAME = "ramap_location_permission"
+        private const val KEY_LOCATION_PERMISSION_REQUESTED = "location_permission_requested"
+
         private val LOCATION_PERMISSIONS =
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,

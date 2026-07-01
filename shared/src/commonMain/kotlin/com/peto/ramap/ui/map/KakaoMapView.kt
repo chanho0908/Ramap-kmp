@@ -10,7 +10,10 @@ import com.peto.ramap.domain.model.RamenShops
 expect fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
+    myLocationRequestKey: Int,
+    locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
     onShopClick: (RamenShop) -> Unit,
+    onLocationPermissionBlocked: () -> Unit,
     modifier: Modifier = Modifier,
 )

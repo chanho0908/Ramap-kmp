@@ -2,6 +2,7 @@ package com.peto.ramap.ui.map
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -18,8 +19,11 @@ import kotlinx.cinterop.ExperimentalForeignApi
 actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
+    myLocationRequestKey: Int,
+    locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
     onShopClick: (RamenShop) -> Unit,
+    onLocationPermissionBlocked: () -> Unit,
     modifier: Modifier,
 ) {
     val mapController =
@@ -27,6 +31,7 @@ actual fun KakaoMapView(
             IosKakaoMapController(
                 onBoundsChanged = onBoundsChanged,
                 onShopClick = onShopClick,
+                onLocationPermissionBlocked = onLocationPermissionBlocked,
             )
         }
 
@@ -45,6 +50,18 @@ actual fun KakaoMapView(
                 isNativeAccessibilityEnabled = false,
             ),
     )
+
+    LaunchedEffect(myLocationRequestKey) {
+        if (myLocationRequestKey > 0) {
+            mapController.moveToMyLocation()
+        }
+    }
+
+    LaunchedEffect(locationSettingsRequestKey) {
+        if (locationSettingsRequestKey > 0) {
+            mapController.openAppSettings()
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose {

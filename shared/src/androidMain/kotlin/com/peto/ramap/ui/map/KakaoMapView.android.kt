@@ -7,9 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -31,16 +33,21 @@ import ramap.shared.generated.resources.marker_ramen
 actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
+    myLocationRequestKey: Int,
+    locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
     onShopClick: (RamenShop) -> Unit,
+    onLocationPermissionBlocked: () -> Unit,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember { MapView(context) }
     val kakaoMapState = remember { mutableStateOf<KakaoMap?>(null) }
+    var shouldShowBlockedSnackbarOnPermissionResult by remember { mutableStateOf(false) }
     val markerBitmap = rememberRamenShopMarkerBitmap()
     val currentOnShopClick = rememberUpdatedState(onShopClick)
+    val currentOnLocationPermissionBlocked = rememberUpdatedState(onLocationPermissionBlocked)
 
     val locationProvider = remember(context) { LocationProvider(context) }
     val boundsCalculator = remember { MapBoundsCalculator() }
@@ -61,6 +68,12 @@ actual fun KakaoMapView(
             kakaoMapState = kakaoMapState,
             locationProvider = locationProvider,
             cameraController = cameraController,
+            onLocationPermissionBlocked = {
+                if (shouldShowBlockedSnackbarOnPermissionResult) {
+                    currentOnLocationPermissionBlocked.value()
+                    shouldShowBlockedSnackbarOnPermissionResult = false
+                }
+            },
         )
 
     BindMapViewLifecycle(
@@ -84,6 +97,33 @@ actual fun KakaoMapView(
             kakaoMap = kakaoMap,
             shops = focusShops,
         )
+    }
+
+    LaunchedEffect(kakaoMapState.value, myLocationRequestKey) {
+        if (myLocationRequestKey == 0) return@LaunchedEffect
+
+        val kakaoMap = kakaoMapState.value ?: return@LaunchedEffect
+        shouldShowBlockedSnackbarOnPermissionResult = true
+        locationProvider.ensureLocationPermission(
+            permissionLauncher = locationPermissionLauncher,
+            onGranted = {
+                shouldShowBlockedSnackbarOnPermissionResult = false
+                locationProvider.moveToLastKnownLocation(
+                    kakaoMap = kakaoMap,
+                    cameraController = cameraController,
+                )
+            },
+            onBlocked = {
+                currentOnLocationPermissionBlocked.value()
+                shouldShowBlockedSnackbarOnPermissionResult = false
+            },
+        )
+    }
+
+    LaunchedEffect(locationSettingsRequestKey) {
+        if (locationSettingsRequestKey == 0) return@LaunchedEffect
+
+        locationProvider.openAppSettings()
     }
 
     AndroidView(
@@ -122,6 +162,7 @@ private fun rememberKakaoMapLocationPermissionLauncher(
     kakaoMapState: MutableState<KakaoMap?>,
     locationProvider: LocationProvider,
     cameraController: KakaoCameraController,
+    onLocationPermissionBlocked: () -> Unit,
 ) = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.RequestMultiplePermissions(),
 ) { permissions ->
@@ -131,6 +172,8 @@ private fun rememberKakaoMapLocationPermissionLauncher(
             kakaoMap = kakaoMap,
             cameraController = cameraController,
         )
+    } else if (locationProvider.isLocationPermissionBlocked()) {
+        onLocationPermissionBlocked()
     }
 }
 
