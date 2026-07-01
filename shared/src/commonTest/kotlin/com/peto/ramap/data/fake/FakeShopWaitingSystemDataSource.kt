@@ -1,4 +1,4 @@
-package com.peto.ramap.data.repository
+package com.peto.ramap.data.fake
 
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
