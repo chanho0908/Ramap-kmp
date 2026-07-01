@@ -9,6 +9,7 @@ import com.peto.ramap.domain.model.RamenShops
 @Composable
 expect fun KakaoMapView(
     shops: RamenShops,
+    focusShops: List<RamenShop>,
     onBoundsChanged: (MapBounds) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,

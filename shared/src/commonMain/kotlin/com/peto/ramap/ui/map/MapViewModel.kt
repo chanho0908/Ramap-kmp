@@ -4,12 +4,12 @@ import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
-import com.peto.ramap.ui.map.model.RamenShopSelectState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -21,22 +21,91 @@ class MapViewModel(
     private var boundsLoadJob: Job? = null
     private var boundsLoadRequestId = 0L
     private var lastLoadedBounds: MapBounds? = null
+    private var searchJob: Job? = null
+    private var searchRequestId = 0L
 
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
             is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
             is MapIntent.OnShopSelected -> selectShop(intent.shop)
             is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
+            is MapIntent.OnQueryChanged -> updateQuery(intent.query)
         }
     }
 
     private fun selectShop(shop: RamenShop) {
-        reduce { copy(selectedShop = RamenShopSelectState.Selected(shop)) }
+        reduce { copy(selectedShop = shop) }
         runTask { loadShopWaitingSystem(shop.id) }
     }
 
     private fun dismissShopDetail() {
-        reduce { copy(selectedShop = RamenShopSelectState.UnSelected) }
+        reduce { copy(selectedShop = null) }
+    }
+
+    private fun updateQuery(query: String) {
+        reduce { copy(query = query) }
+        scheduleSearch(SearchQuery(query).normalizeShopSearchQuery())
+    }
+
+    private fun scheduleSearch(query: SearchQuery) {
+        searchJob?.cancel()
+        val requestId = ++searchRequestId
+
+        if (query.value.isBlank()) {
+            clearSearchResults()
+            return
+        }
+
+        loadSearch(query, requestId)
+    }
+
+    private fun loadSearch(
+        query: SearchQuery,
+        requestId: Long,
+    ) {
+        searchJob =
+            runTask {
+                delay(SEARCH_DEBOUNCE_MILLIS.milliseconds)
+                loadSearchResults(query, requestId)
+            }
+    }
+
+    private fun clearSearchResults() {
+        reduce {
+            copy(
+                searchResults = RamenShops(emptyMap()),
+                searchResultsQuery = null,
+            )
+        }
+    }
+
+    private suspend fun loadSearchResults(
+        query: SearchQuery,
+        requestId: Long,
+    ) {
+        val result: RamenShops =
+            ramenShopRepository.searchRamenShops(
+                query = query,
+                limit = SEARCH_RESULT_LIMIT,
+            )
+        if (requestId != searchRequestId) return
+
+        reduceSearchResult(
+            query = query,
+            result = result,
+        )
+    }
+
+    private fun reduceSearchResult(
+        query: SearchQuery,
+        result: RamenShops,
+    ) {
+        reduce {
+            copy(
+                searchResults = result,
+                searchResultsQuery = query,
+            )
+        }
     }
 
     private suspend fun loadShopWaitingSystem(shopId: String) {
@@ -78,22 +147,29 @@ class MapViewModel(
         val previousBounds = lastLoadedBounds
         if (previousBounds != null && !bounds.isMeaningfullyDifferentFrom(previousBounds)) return
 
-        val result = ramenShopRepository.fetchRamenShops(bounds)
+        val result: RamenShops = ramenShopRepository.fetchRamenShops(bounds)
         if (requestId != boundsLoadRequestId) return
 
         lastLoadedBounds = bounds
 
-        val mergedShops =
-            RamenShops(
-                value = currentState.shops.value + result.value,
-            )
+        reduceLoadRamenShopResult(result)
+    }
 
+    private fun reduceLoadRamenShopResult(result: RamenShops) {
+        val mergedShops = mergeShops(result)
         if (currentState.shops != mergedShops) {
             reduce { copy(shops = mergedShops) }
         }
     }
 
+    private fun mergeShops(newShops: RamenShops): RamenShops =
+        RamenShops(
+            value = currentState.shops.value + newShops.value,
+        )
+
     companion object {
         private const val BOUNDS_LOAD_DEBOUNCE_MILLIS = 350L
+        private const val SEARCH_DEBOUNCE_MILLIS = 300L
+        private const val SEARCH_RESULT_LIMIT = 50
     }
 }

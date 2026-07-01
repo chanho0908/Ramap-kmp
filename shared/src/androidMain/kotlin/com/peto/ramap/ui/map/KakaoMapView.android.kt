@@ -30,6 +30,7 @@ import ramap.shared.generated.resources.marker_ramen
 @Composable
 actual fun KakaoMapView(
     shops: RamenShops,
+    focusShops: List<RamenShop>,
     onBoundsChanged: (MapBounds) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier,
@@ -74,6 +75,14 @@ actual fun KakaoMapView(
             markerBitmap = markerBitmap,
             shops = shops,
             onShopClick = { shop -> currentOnShopClick.value(shop) },
+        )
+    }
+
+    LaunchedEffect(kakaoMapState.value, focusShops) {
+        val kakaoMap = kakaoMapState.value ?: return@LaunchedEffect
+        cameraController.focusRamenShops(
+            kakaoMap = kakaoMap,
+            shops = focusShops,
         )
     }
 
