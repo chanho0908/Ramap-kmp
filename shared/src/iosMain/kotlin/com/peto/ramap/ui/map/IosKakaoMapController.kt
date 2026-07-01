@@ -43,6 +43,20 @@ import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectZero
+import platform.CoreLocation.CLAuthorizationStatus
+import platform.CoreLocation.CLLocation
+import platform.CoreLocation.CLLocationManager
+import platform.CoreLocation.CLLocationManagerDelegateProtocol
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
+import platform.CoreLocation.kCLAuthorizationStatusDenied
+import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
+import platform.CoreLocation.kCLAuthorizationStatusRestricted
+import platform.CoreLocation.kCLLocationAccuracyHundredMeters
+import platform.Foundation.NSError
+import platform.Foundation.NSURL
+import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationOpenSettingsURLString
 import platform.UIKit.UIColor
 import platform.UIKit.UIImage
 import platform.darwin.NSObject
@@ -79,9 +93,11 @@ private const val EMPTY_FOCUS_KEY = ""
 class IosKakaoMapController(
     private val onBoundsChanged: (MapBounds) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
+    private val onLocationPermissionBlocked: () -> Unit,
 ) : NSObject(),
     MapControllerDelegateProtocol,
-    KakaoMapEventDelegateProtocol {
+    KakaoMapEventDelegateProtocol,
+    CLLocationManagerDelegateProtocol {
     private val mapViewContainer = KMViewContainer(frame = CGRectZero.readValue())
     val view =
         IosKakaoMapContainer(
@@ -91,11 +107,17 @@ class IosKakaoMapController(
         )
 
     private val controller = KMController(viewContainer = mapViewContainer)
+    private val locationManager =
+        CLLocationManager().apply {
+            delegate = this@IosKakaoMapController
+            desiredAccuracy = kCLLocationAccuracyHundredMeters
+        }
     private val mapViewName = "ramap"
     private val markerLayerId = "ramen-shop-marker-layer"
     private val renderedShopIds = mutableSetOf<String>()
     private val shopsByPoiId = mutableMapOf<String, RamenShop>()
     private var pendingShops: RamenShops? = null
+    private var pendingMyLocationCoordinate: IosMapCoordinate? = null
     private var isStarted = false
     private var isMapViewAdded = false
     private var lastFocusKey = EMPTY_FOCUS_KEY
@@ -173,6 +195,8 @@ class IosKakaoMapController(
         kakaoMap.eventDelegate = this
         notifyCurrentBounds(kakaoMap)
         pendingShops?.let(::renderRamenShopMarkers)
+        pendingMyLocationCoordinate?.let(::moveToCoordinate)
+        pendingMyLocationCoordinate = null
     }
 
     /**
@@ -475,6 +499,129 @@ class IosKakaoMapController(
         val kakaoMap = getKakaoMap() ?: return
         lastFocusKey = shops.focusKey()
         focusShops(kakaoMap, shops)
+    }
+
+    /**
+     * 위치 권한 상태를 확인한 뒤 권한이 있으면 현재 위치로 이동하고, 없으면 iOS 권한 요청을 시작한다.
+     */
+    fun moveToMyLocation() {
+        when (locationManager.authorizationStatus) {
+            kCLAuthorizationStatusAuthorizedWhenInUse,
+            kCLAuthorizationStatusAuthorizedAlways,
+            -> moveToKnownOrRequestedLocation()
+
+            kCLAuthorizationStatusNotDetermined -> locationManager.requestWhenInUseAuthorization()
+
+            kCLAuthorizationStatusDenied,
+            kCLAuthorizationStatusRestricted,
+            -> onLocationPermissionBlocked()
+
+            else -> locationManager.requestWhenInUseAuthorization()
+        }
+    }
+
+    /**
+     * iOS 앱 설정 화면을 열어 사용자가 위치 권한을 직접 변경할 수 있게 한다.
+     */
+    fun openAppSettings() {
+        val settingsUrl = NSURL.URLWithString(UIApplicationOpenSettingsURLString) ?: return
+
+        UIApplication.sharedApplication.openURL(
+            url = settingsUrl,
+            options = emptyMap<Any?, Any>(),
+            completionHandler = null,
+        )
+    }
+
+    /**
+     * 권한 허용 이후 마지막 위치가 있으면 즉시 이동하고, 없으면 단발 위치 조회를 요청한다.
+     */
+    private fun moveToKnownOrRequestedLocation() {
+        val location = locationManager.location
+
+        if (location != null) {
+            moveToLocation(location)
+        } else {
+            locationManager.requestLocation()
+        }
+    }
+
+    override fun locationManagerDidChangeAuthorization(manager: CLLocationManager) {
+        when {
+            manager.isAuthorized() -> moveToKnownOrRequestedLocation()
+            manager.isBlocked() -> onLocationPermissionBlocked()
+        }
+    }
+
+    override fun locationManager(
+        manager: CLLocationManager,
+        didChangeAuthorizationStatus: CLAuthorizationStatus,
+    ) {
+        when {
+            didChangeAuthorizationStatus.isAuthorized() -> moveToKnownOrRequestedLocation()
+            didChangeAuthorizationStatus.isBlocked() -> onLocationPermissionBlocked()
+        }
+    }
+
+    override fun locationManager(
+        manager: CLLocationManager,
+        didUpdateLocations: List<*>,
+    ) {
+        val location = didUpdateLocations.lastOrNull() as? CLLocation ?: return
+        moveToLocation(location)
+    }
+
+    override fun locationManager(
+        manager: CLLocationManager,
+        didFailWithError: NSError,
+    ) = Unit
+
+    private fun CLLocationManager.isAuthorized(): Boolean = authorizationStatus.isAuthorized()
+
+    private fun CLLocationManager.isBlocked(): Boolean = authorizationStatus.isBlocked()
+
+    private fun CLAuthorizationStatus.isAuthorized(): Boolean =
+        this == kCLAuthorizationStatusAuthorizedWhenInUse ||
+            this == kCLAuthorizationStatusAuthorizedAlways
+
+    private fun CLAuthorizationStatus.isBlocked(): Boolean =
+        this == kCLAuthorizationStatusDenied ||
+            this == kCLAuthorizationStatusRestricted
+
+    /**
+     * CoreLocation 좌표를 Kakao Maps SDK 좌표로 변환해 지도 카메라를 이동한다.
+     */
+    private fun moveToLocation(location: CLLocation) {
+        location.coordinate.useContents {
+            moveToCoordinate(
+                IosMapCoordinate(
+                    latitude = latitude,
+                    longitude = longitude,
+                ),
+            )
+        }
+    }
+
+    private fun moveToCoordinate(coordinate: IosMapCoordinate) {
+        val kakaoMap = getKakaoMap()
+
+        if (kakaoMap == null || !isMapViewAdded) {
+            pendingMyLocationCoordinate = coordinate
+            return
+        }
+
+        moveCamera(
+            kakaoMap = kakaoMap,
+            cameraUpdate =
+                CameraUpdate.makeWithTarget(
+                    target =
+                        MapPoint(
+                            longitude = coordinate.longitude,
+                            latitude = coordinate.latitude,
+                        ),
+                    mapView = kakaoMap,
+                ),
+        )
     }
 
     /**
