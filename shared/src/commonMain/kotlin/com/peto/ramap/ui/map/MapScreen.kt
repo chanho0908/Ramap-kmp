@@ -162,7 +162,7 @@ private fun MapScreen(
                 MenuCategoryFilterRow(
                     selectedCategories = uiState.filters.values,
                     onCategoryClick = onCategoryFilterToggled,
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = 6.dp),
                 )
             }
 
