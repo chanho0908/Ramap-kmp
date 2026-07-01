@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.map.contract
 
 import com.peto.ramap.core.base.Intent
+import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 
@@ -20,4 +21,10 @@ sealed interface MapIntent : Intent {
     data class OnQueryChanged(
         val query: String,
     ) : MapIntent
+
+    data class OnCategoryFilterToggled(
+        val category: Category,
+    ) : MapIntent
+
+    data object OnFilterCleared : MapIntent
 }
