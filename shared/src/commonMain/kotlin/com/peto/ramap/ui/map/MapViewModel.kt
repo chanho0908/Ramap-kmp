@@ -64,7 +64,7 @@ class MapViewModel(
     private fun toggleCategoryFilter(category: Category) {
         val currentFilter = currentState.filters
         val nextFilter =
-            if (category in currentFilter.values) {
+            if (category in currentFilter) {
                 currentFilter - category
             } else {
                 currentFilter + category
@@ -83,10 +83,7 @@ class MapViewModel(
                 filters = filter,
                 selectedShop =
                     selectedShop?.takeIf { shop ->
-                        filter.isEmpty ||
-                            shop.menuCategories.any { category ->
-                                category in filter.values
-                            }
+                        shop.menuCategories.matches(filter)
                     },
                 isSearchResultsDismissed = false,
             )
@@ -142,7 +139,7 @@ class MapViewModel(
             result = result,
         )
 
-        result.filterByCategory(currentState.filters).value.values.singleOrNull()?.let { shop ->
+        result.filterByCategory(currentState.filters).values.singleOrNull()?.let { shop ->
             selectShop(shop)
         }
     }
@@ -215,7 +212,7 @@ class MapViewModel(
 
     private fun mergeShops(newShops: RamenShops): RamenShops =
         RamenShops(
-            value = currentState.shops.value + newShops.value,
+            currentState.shops + newShops,
         )
 
     companion object {

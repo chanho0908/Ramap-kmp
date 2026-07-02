@@ -35,13 +35,13 @@ internal class KakaoMarkerRenderer {
         val labelLayer = manager.layer ?: return
 
         removeStaleMarkers(
-            visibleShopIds = shops.value.keys,
+            visibleShopIds = shops.keys,
             removeLabel = { shopId ->
                 labelLayer.getLabel(markerLabelId(shopId))?.remove()
             },
         )
 
-        if (shops.value.isEmpty()) return
+        if (shops.isEmpty()) return
 
         val markerStyles = createMarkerStyles(manager, markerBitmap)
         val newShops = shops.filterNotContainShops(renderedShopIds)
@@ -64,7 +64,7 @@ internal class KakaoMarkerRenderer {
     ) {
         kakaoMap.setOnLabelClickListener { _, _, label ->
             val shopId = label.tag as? String ?: return@setOnLabelClickListener false
-            val shop = shops.value[shopId] ?: return@setOnLabelClickListener false
+            val shop = shops[shopId] ?: return@setOnLabelClickListener false
             onShopClick(shop)
             true
         }

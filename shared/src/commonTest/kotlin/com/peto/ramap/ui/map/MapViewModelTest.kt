@@ -223,7 +223,7 @@ class MapViewModelTest {
             assertEquals(shops, viewModel.uiState.value.searchResults)
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertEquals(shops, viewModel.uiState.value.markerShops)
-            assertEquals(shops.value.values.toList(), viewModel.uiState.value.focusShops)
+            assertEquals(shops.values.toList(), viewModel.uiState.value.focusShops)
         }
 
     @Test
@@ -458,7 +458,11 @@ class MapViewModelTest {
             viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
 
-            assertEquals(setOf(Category.MAZESOBA), viewModel.uiState.value.filters.values)
+            assertEquals(
+                setOf(Category.MAZESOBA),
+                viewModel.uiState.value.filters
+                    .toSet(),
+            )
             assertEquals(
                 RamenShops(mapOf(mazesobaShop.id to mazesobaShop)),
                 viewModel.uiState.value.markerShops,
@@ -475,7 +479,11 @@ class MapViewModelTest {
             viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
 
-            assertEquals(emptySet(), viewModel.uiState.value.filters.values)
+            assertEquals(
+                emptySet(),
+                viewModel.uiState.value.filters
+                    .toSet(),
+            )
         }
 
     @Test
@@ -489,7 +497,11 @@ class MapViewModelTest {
             viewModel.dispatch(MapIntent.OnFilterCleared)
             runCurrent()
 
-            assertEquals(emptySet(), viewModel.uiState.value.filters.values)
+            assertEquals(
+                emptySet(),
+                viewModel.uiState.value.filters
+                    .toSet(),
+            )
         }
 
     @Test
