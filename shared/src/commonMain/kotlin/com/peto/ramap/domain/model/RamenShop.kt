@@ -11,11 +11,11 @@ data class RamenShop(
     val businessHours: String?,
     val instagramUrl: String?,
     val kakaoRating: Double?,
-    val menuCategories: List<Category>,
+    val menuCategories: MenuCategories,
     val isVisible: Boolean,
     val createdAt: String,
     val updatedAt: String,
 ) {
     val hasCategory: Boolean
-        get() = menuCategories.isNotEmpty()
+        get() = menuCategories.hasCategory
 }

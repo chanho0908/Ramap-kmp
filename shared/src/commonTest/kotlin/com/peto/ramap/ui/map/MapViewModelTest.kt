@@ -222,7 +222,7 @@ class MapViewModelTest {
             assertEquals(shops, viewModel.uiState.value.searchResults)
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertEquals(shops, viewModel.uiState.value.markerShops)
-            assertEquals(shops.value.values.toList(), viewModel.uiState.value.focusShops)
+            assertEquals(shops.values.toList(), viewModel.uiState.value.focusShops)
         }
 
     @Test

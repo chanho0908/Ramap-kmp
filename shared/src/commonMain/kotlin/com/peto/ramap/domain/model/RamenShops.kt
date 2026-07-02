@@ -1,23 +1,19 @@
 package com.peto.ramap.domain.model
 
 data class RamenShops(
-    val value: Map<String, RamenShop>,
-) {
-    fun filterNotContainShops(renderedShopIds: MutableSet<String>) =
-        value.values.filterNot { shop ->
+    private val shops: Map<String, RamenShop>,
+) : Map<String, RamenShop> by shops {
+    fun filterNotContainShops(renderedShopIds: Set<String>) =
+        values.filterNot { shop ->
             shop.id in renderedShopIds
         }
 
     fun filterByCategory(filter: RamenShopFilter): RamenShops {
-        if (filter.isEmpty) return this
-        return copy(
-            value =
-                value
-                    .filterValues { shop ->
-                        shop.menuCategories.any { category ->
-                            category in filter.values
-                        }
-                    },
+        if (filter.isEmpty()) return this
+        return RamenShops(
+            shops.filterValues { shop ->
+                shop.menuCategories.matches(filter)
+            },
         )
     }
 }

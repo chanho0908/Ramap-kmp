@@ -1,11 +1,8 @@
 package com.peto.ramap.domain.model
 
 data class RamenShopFilter(
-    val values: Set<Category> = emptySet(),
-) {
-    val isEmpty: Boolean
-        get() = values.isEmpty()
-
+    private val values: Set<Category> = emptySet(),
+) : Set<Category> by values {
     operator fun plus(category: Category): RamenShopFilter = copy(values = values + category)
 
     operator fun minus(category: Category): RamenShopFilter = copy(values = values - category)

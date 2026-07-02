@@ -15,7 +15,7 @@ class RamenShopFilterTest {
         val result = filter + Category.MAZESOBA
 
         // then
-        assertTrue(Category.MAZESOBA in result.values)
+        assertTrue(Category.MAZESOBA in result)
     }
 
     @Test
@@ -27,7 +27,7 @@ class RamenShopFilterTest {
         val result = filter - Category.MAZESOBA
 
         // then
-        assertFalse(Category.MAZESOBA in result.values)
+        assertFalse(Category.MAZESOBA in result)
     }
 
     @Test
@@ -45,21 +45,21 @@ class RamenShopFilterTest {
         val result = filter.clear()
 
         // then
-        assertTrue(result.values.isEmpty())
+        assertTrue(result.isEmpty())
     }
 
     @Test
     fun `비어있는 필터는 isEmpty가 true이다`() {
         val filter = RamenShopFilter()
 
-        assertTrue(filter.isEmpty)
+        assertTrue(filter.isEmpty())
     }
 
     @Test
     fun `카테고리가 하나라도 있으면 isEmpty가 false이다`() {
         val filter = RamenShopFilter(setOf(Category.MAZESOBA))
 
-        assertFalse(filter.isEmpty)
+        assertFalse(filter.isEmpty())
     }
 
     @Test
@@ -71,7 +71,7 @@ class RamenShopFilterTest {
         val result = filter + Category.MAZESOBA + Category.MAZESOBA
 
         // then
-        assertEquals(setOf(Category.MAZESOBA), result.values)
+        assertEquals(setOf(Category.MAZESOBA), result.toSet())
     }
 
     @Test

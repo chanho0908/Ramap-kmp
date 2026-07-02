@@ -106,7 +106,7 @@ class MapViewModel(
             result = result,
         )
 
-        result.value.values.singleOrNull()?.let { shop ->
+        result.values.singleOrNull()?.let { shop ->
             selectShop(shop)
         }
     }
@@ -179,7 +179,7 @@ class MapViewModel(
 
     private fun mergeShops(newShops: RamenShops): RamenShops =
         RamenShops(
-            value = currentState.shops.value + newShops.value,
+            currentState.shops + newShops,
         )
 
     companion object {
