@@ -2,6 +2,7 @@ package com.peto.ramap.ui.map
 
 import app.cash.turbine.test
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -432,6 +433,143 @@ class MapViewModelTest {
             assertEquals(mapShops, viewModel.uiState.value.shops)
             assertEquals(mapShops, viewModel.uiState.value.markerShops)
             assertEquals(listOf(SearchQuery("라멘")), ramenShopRepository.requestedSearchQueries)
+        }
+
+    @Test
+    fun `카테고리 필터를 선택하면 필터 상태가 갱신되고 마커 목록에 적용된다`() =
+        coroutinesTest {
+            val mazesobaShop =
+                ramenShopFixture(
+                    id = "mazesoba-shop",
+                    menuCategories = listOf(Category.MAZESOBA),
+                )
+            val jiroShop =
+                ramenShopFixture(
+                    id = "jiro-shop",
+                    menuCategories = listOf(Category.JIRO),
+                )
+            val shops = RamenShops(listOf(mazesobaShop, jiroShop).associateBy { it.id })
+            val ramenShopRepository = FakeRamenShopRepository(result = shops)
+            val viewModel = mapViewModel(ramenShopRepository)
+
+            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            advanceTimeBy(350)
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            runCurrent()
+
+            assertEquals(
+                setOf(Category.MAZESOBA),
+                viewModel.uiState.value.filters
+                    .toSet(),
+            )
+            assertEquals(
+                RamenShops(mapOf(mazesobaShop.id to mazesobaShop)),
+                viewModel.uiState.value.markerShops,
+            )
+        }
+
+    @Test
+    fun `선택된 카테고리를 다시 선택하면 필터에서 제거된다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            runCurrent()
+
+            assertEquals(
+                emptySet(),
+                viewModel.uiState.value.filters
+                    .toSet(),
+            )
+        }
+
+    @Test
+    fun `필터 초기화 인텐트는 모든 카테고리 필터를 제거한다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.JIRO))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnFilterCleared)
+            runCurrent()
+
+            assertEquals(
+                emptySet(),
+                viewModel.uiState.value.filters
+                    .toSet(),
+            )
+        }
+
+    @Test
+    fun `필터와 맞지 않는 선택 매장은 닫는다`() =
+        coroutinesTest {
+            val shop =
+                ramenShopFixture(
+                    id = "shoyu-shop",
+                    menuCategories = listOf(Category.SHOYU),
+                )
+            val viewModel = mapViewModel()
+
+            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+        }
+
+    @Test
+    fun `검색 결과도 카테고리 필터가 적용된 목록을 보여준다`() =
+        coroutinesTest {
+            val mazesobaShop =
+                ramenShopFixture(
+                    id = "mazesoba-shop",
+                    menuCategories = listOf(Category.MAZESOBA),
+                )
+            val jiroShop =
+                ramenShopFixture(
+                    id = "jiro-shop",
+                    menuCategories = listOf(Category.JIRO),
+                )
+            val searchShops = RamenShops(listOf(mazesobaShop, jiroShop).associateBy { it.id })
+            val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
+            val viewModel = mapViewModel(ramenShopRepository)
+
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+
+            assertEquals(listOf(mazesobaShop), viewModel.uiState.value.searchResultShops)
+            assertEquals(
+                RamenShops(mapOf(mazesobaShop.id to mazesobaShop)),
+                viewModel.uiState.value.markerShops,
+            )
+        }
+
+    @Test
+    fun `필터와 맞지 않는 단일 검색 결과는 자동 선택하지 않는다`() =
+        coroutinesTest {
+            val shop =
+                ramenShopFixture(
+                    id = "jiro-shop",
+                    menuCategories = listOf(Category.JIRO),
+                )
+            val searchShops = RamenShops(listOf(shop).associateBy { it.id })
+            val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
+            val viewModel = mapViewModel(ramenShopRepository)
+
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals(emptyList(), viewModel.uiState.value.searchResultShops)
         }
 }
 

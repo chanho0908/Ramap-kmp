@@ -24,7 +24,7 @@ data class MapUiState(
      * 리스트 UI에서는 순회하기 쉬운 [List] 형태로 변환해 사용한다.
      */
     val searchResultShops: List<RamenShop>
-        get() = searchResults.values.toList()
+        get() = filteredSearchResults.values.toList()
 
     /**
      * 지도 마커로 렌더링할 매장 목록.
@@ -38,9 +38,9 @@ data class MapUiState(
             val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
 
             return if (normalizedQuery.value.isNotBlank() && searchResultsQuery == normalizedQuery) {
-                searchResults
+                filteredSearchResults
             } else {
-                shops
+                filteredShops
             }
         }
 
@@ -77,4 +77,10 @@ data class MapUiState(
                 query.isNotBlank() && searchResultShops.isNotEmpty() -> searchResultShops
                 else -> emptyList()
             }
+
+    private val filteredShops: RamenShops
+        get() = shops.filterByCategory(filters)
+
+    private val filteredSearchResults: RamenShops
+        get() = searchResults.filterByCategory(filters)
 }

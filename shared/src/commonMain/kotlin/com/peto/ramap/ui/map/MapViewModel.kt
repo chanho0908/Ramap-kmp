@@ -1,8 +1,10 @@
 package com.peto.ramap.ui.map
 
 import com.peto.ramap.core.base.BaseViewModel
+import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -31,6 +33,8 @@ class MapViewModel(
             is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
             is MapIntent.OnSearchResultsDismissed -> dismissSearchResults()
             is MapIntent.OnQueryChanged -> updateQuery(intent.query)
+            is MapIntent.OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
+            is MapIntent.OnFilterCleared -> clearFilter()
         }
     }
 
@@ -55,6 +59,35 @@ class MapViewModel(
             )
         }
         scheduleSearch(SearchQuery(query).normalizeShopSearchQuery())
+    }
+
+    private fun toggleCategoryFilter(category: Category) {
+        val currentFilter = currentState.filters
+        val nextFilter =
+            if (category in currentFilter) {
+                currentFilter - category
+            } else {
+                currentFilter + category
+            }
+
+        updateFilter(nextFilter)
+    }
+
+    private fun clearFilter() {
+        updateFilter(RamenShopFilter())
+    }
+
+    private fun updateFilter(filter: RamenShopFilter) {
+        reduce {
+            copy(
+                filters = filter,
+                selectedShop =
+                    selectedShop?.takeIf { shop ->
+                        shop.menuCategories.matches(filter)
+                    },
+                isSearchResultsDismissed = false,
+            )
+        }
     }
 
     private fun scheduleSearch(query: SearchQuery) {
@@ -106,7 +139,7 @@ class MapViewModel(
             result = result,
         )
 
-        result.values.singleOrNull()?.let { shop ->
+        result.filterByCategory(currentState.filters).values.singleOrNull()?.let { shop ->
             selectShop(shop)
         }
     }

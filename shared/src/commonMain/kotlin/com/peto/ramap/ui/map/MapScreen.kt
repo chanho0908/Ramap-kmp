@@ -2,6 +2,7 @@ package com.peto.ramap.ui.map
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,10 +39,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
+import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.map.component.MenuCategoryFilterRow
 import com.peto.ramap.ui.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.map.component.RamenShopSearchResultList
@@ -75,6 +78,9 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
         onSearchResultsDismissed = {
             viewModel.dispatch(MapIntent.OnSearchResultsDismissed)
         },
+        onCategoryFilterToggled = { category ->
+            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(category))
+        },
     )
 }
 
@@ -86,6 +92,7 @@ private fun MapScreen(
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
+    onCategoryFilterToggled: (Category) -> Unit,
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
     val focusManager = LocalFocusManager.current
@@ -137,9 +144,7 @@ private fun MapScreen(
                 },
             )
 
-            RamenShopSearchBar(
-                query = uiState.query,
-                onQueryChange = onQueryChanged,
+            Column(
                 modifier =
                     Modifier
                         .padding(
@@ -148,7 +153,18 @@ private fun MapScreen(
                                     .asPaddingValues()
                                     .calculateTopPadding() + 16.dp,
                         ).padding(horizontal = 10.dp),
-            )
+            ) {
+                RamenShopSearchBar(
+                    query = uiState.query,
+                    onQueryChange = onQueryChanged,
+                )
+
+                MenuCategoryFilterRow(
+                    selectedCategories = uiState.filters,
+                    onCategoryClick = onCategoryFilterToggled,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
 
             MyLocationButton(
                 onClick = { myLocationRequestKey += 1 },
