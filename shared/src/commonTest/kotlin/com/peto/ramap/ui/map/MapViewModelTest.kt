@@ -3,6 +3,7 @@ package com.peto.ramap.ui.map
 import app.cash.turbine.test
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.Category
+import com.peto.ramap.domain.model.DefaultMapConfig
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -104,14 +105,18 @@ class MapViewModelTest {
                 )
 
             viewModel.uiState.test {
-                assertEquals(RamenShops(emptyMap()), awaitItem().shops)
+                val initialState = awaitItem()
+                assertEquals(RamenShops(emptyMap()), initialState.shops)
+                assertEquals(DefaultMapConfig.bounds, initialState.bounds)
 
                 viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+                assertEquals(BOUNDS_FIXTURE, awaitItem().bounds)
                 advanceTimeBy(350)
                 runCurrent()
                 assertEquals(shops, awaitItem().shops)
 
                 viewModel.dispatch(MapIntent.OnBoundsChanged(changedBounds))
+                assertEquals(changedBounds, awaitItem().bounds)
                 advanceTimeBy(350)
                 runCurrent()
                 expectNoEvents()

@@ -173,6 +173,8 @@ class MapViewModel(
      * 드래그 중간 지점마다 라멘 가게 목록을 다시 조회하지 않도록 한다.
      */
     private fun scheduleRamenShopsLoad(bounds: MapBounds) {
+        reduce { copy(bounds = bounds) }
+
         boundsLoadJob?.cancel()
         val requestId = ++boundsLoadRequestId
         boundsLoadJob =

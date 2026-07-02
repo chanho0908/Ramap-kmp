@@ -30,6 +30,7 @@ import cocoapods.KakaoMapsSDK.TextStyle
 import cocoapods.KakaoMapsSDK.TransitionTypeNone
 import cocoapods.KakaoMapsSDK.create
 import com.peto.ramap.core.config.RamenShopMarkerConfig
+import com.peto.ramap.domain.model.DefaultMapConfig
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
@@ -63,9 +64,6 @@ import platform.darwin.NSObject
 
 private const val DEFAULT_APP_NAME = "openmap"
 private const val DEFAULT_VIEW_INFO_NAME = "map"
-private const val DEFAULT_LONGITUDE = 127.108621
-private const val DEFAULT_LATITUDE = 37.402005
-private const val DEFAULT_ZOOM_LEVEL = 15
 private const val MARKER_IMAGE_NAME = "marker_ramen"
 private const val MARKER_LAYER_Z_ORDER = 10L
 private const val MARKER_TEXT_RED = 0x33 / 255.0
@@ -169,7 +167,7 @@ class IosKakaoMapController(
             DEFAULT_APP_NAME,
             DEFAULT_VIEW_INFO_NAME,
             defaultMapPoint(),
-            DEFAULT_ZOOM_LEVEL.toLong(),
+            DefaultMapConfig.ZOOM_LEVEL.toLong(),
             true,
         )
 
@@ -178,8 +176,8 @@ class IosKakaoMapController(
      */
     private fun defaultMapPoint(): MapPoint =
         MapPoint(
-            longitude = DEFAULT_LONGITUDE,
-            latitude = DEFAULT_LATITUDE,
+            longitude = DefaultMapConfig.location.lng,
+            latitude = DefaultMapConfig.location.lat,
         )
 
     /**
