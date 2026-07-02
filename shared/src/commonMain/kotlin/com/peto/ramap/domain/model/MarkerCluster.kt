@@ -99,7 +99,7 @@ class MarkerCluster {
         )
 
     companion object {
-        private const val CLUSTER_CELL_SIZE_PX = 88.0
+        private const val CLUSTER_CELL_SIZE_PX = 180.0
         private const val CLUSTER_ID_SEPARATOR = "-"
     }
 }

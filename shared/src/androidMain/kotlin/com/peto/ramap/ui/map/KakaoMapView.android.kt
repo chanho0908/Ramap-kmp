@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.AndroidView
@@ -23,6 +24,7 @@ import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.MapView
 import com.peto.ramap.core.config.RamenShopMarkerConfig
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 import org.jetbrains.compose.resources.painterResource
@@ -46,14 +48,16 @@ actual fun KakaoMapView(
     val mapView = remember { MapView(context) }
     val kakaoMapState = remember { mutableStateOf<KakaoMap?>(null) }
     var shouldShowBlockedSnackbarOnPermissionResult by remember { mutableStateOf(false) }
+    var viewportSize by remember { mutableStateOf(MapViewportSize()) }
     val markerBitmap = rememberRamenShopMarkerBitmap()
     val currentOnShopClick = rememberUpdatedState(onShopClick)
     val currentOnLocationPermissionBlocked = rememberUpdatedState(onLocationPermissionBlocked)
 
+    val markerCluster = remember { MarkerCluster() }
     val locationProvider = remember(context) { LocationProvider(context) }
     val boundsCalculator = remember { MapBoundsCalculator() }
     val cameraController = remember { KakaoCameraController() }
-    val markerRenderer = remember { KakaoMarkerRenderer() }
+    val markerRenderer = remember { KakaoMarkerRenderer(RamenShopClusterBitmapFactory()) }
     val lifecycleController =
         remember(mapView, locationProvider, boundsCalculator, cameraController) {
             KakaoMapLifecycleController(
@@ -82,13 +86,27 @@ actual fun KakaoMapView(
         lifecycle = lifecycle,
     )
 
-    LaunchedEffect(kakaoMapState.value, markerBitmap, shops) {
+    LaunchedEffect(kakaoMapState.value, markerBitmap, shops, bounds, viewportSize) {
         val kakaoMap = kakaoMapState.value ?: return@LaunchedEffect
+        val markers =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = bounds,
+                viewportWidth = viewportSize.width,
+                viewportHeight = viewportSize.height,
+            )
+
         markerRenderer.render(
             kakaoMap = kakaoMap,
             markerBitmap = markerBitmap,
-            shops = shops,
+            markers = markers,
             onShopClick = { shop -> currentOnShopClick.value(shop) },
+            onClusterClick = { cluster ->
+                cameraController.focusRamenShops(
+                    kakaoMap = kakaoMap,
+                    shops = cluster.shops,
+                )
+            },
         )
     }
 
@@ -128,7 +146,14 @@ actual fun KakaoMapView(
     }
 
     AndroidView(
-        modifier = modifier,
+        modifier =
+            modifier.onSizeChanged { size ->
+                viewportSize =
+                    MapViewportSize(
+                        width = size.width,
+                        height = size.height,
+                    )
+            },
         factory = {
             lifecycleController.startMap(
                 lifecycle = lifecycle,
@@ -143,13 +168,19 @@ actual fun KakaoMapView(
     )
 }
 
+private data class MapViewportSize(
+    val width: Int = 0,
+    val height: Int = 0,
+)
+
 @Composable
 private fun rememberRamenShopMarkerBitmap(): Bitmap {
     val density = LocalDensity.current
     val markerPainter = painterResource(Res.drawable.marker_ramen)
+    val factory = RamenShopMarkerBitmapFactory()
 
     return remember(markerPainter, density) {
-        RamenShopMarkerBitmapFactory.create(
+        factory.create(
             painter = markerPainter,
             density = density,
             width = RamenShopMarkerConfig.WIDTH,
