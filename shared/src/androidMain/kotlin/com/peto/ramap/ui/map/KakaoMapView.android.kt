@@ -168,11 +168,6 @@ actual fun KakaoMapView(
     )
 }
 
-private data class MapViewportSize(
-    val width: Int = 0,
-    val height: Int = 0,
-)
-
 @Composable
 private fun rememberRamenShopMarkerBitmap(): Bitmap {
     val density = LocalDensity.current
