@@ -1,0 +1,162 @@
+package com.peto.ramap.domain.model
+
+import com.peto.ramap.fixture.BOUNDS_FIXTURE
+import com.peto.ramap.fixture.ramenShopFixture
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+class MarkerClusterTest {
+    private val markerCluster = MarkerCluster()
+
+    @Test
+    fun `가게가 없으면 빈 마커 목록을 반환한다`() {
+        // given
+        val shops = RamenShops(emptyMap())
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `bounds가 없으면 모든 가게를 단일 마커로 반환한다`() {
+        // given
+        val shop = ramenShopFixture(id = "1")
+        val shops = ramenShopsOf(shop)
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = null,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        val marker = assertIs<Marker.SingleMarker>(result.single())
+        assertEquals(shop.id, marker.id)
+        assertEquals(shop, marker.shop)
+    }
+
+    @Test
+    fun `viewport 크기가 유효하지 않으면 모든 가게를 단일 마커로 반환한다`() {
+        // given
+        val shop = ramenShopFixture(id = "1")
+        val shops = ramenShopsOf(shop)
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = 0,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        val marker = assertIs<Marker.SingleMarker>(result.single())
+        assertEquals(shop.id, marker.id)
+    }
+
+    @Test
+    fun `같은 cell의 가게들은 클러스터 마커로 반환한다`() {
+        // given
+        val firstShop = shopAt(id = "1", lat = 37.501, lng = 126.901)
+        val secondShop = shopAt(id = "2", lat = 37.502, lng = 126.902)
+        val shops = ramenShopsOf(firstShop, secondShop)
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        val marker = assertIs<Marker.ClusterMaker>(result.single())
+        assertEquals(2, marker.count)
+        assertEquals(listOf(firstShop, secondShop), marker.shops)
+    }
+
+    @Test
+    fun `서로 다른 cell의 가게들은 단일 마커로 반환한다`() {
+        // given
+        val firstShop = shopAt(id = "1", lat = 37.501, lng = 126.901)
+        val secondShop = shopAt(id = "2", lat = 37.520, lng = 126.920)
+        val shops = ramenShopsOf(firstShop, secondShop)
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        assertEquals(setOf("1", "2"), result.map { marker -> marker.id }.toSet())
+        result.forEach { marker -> assertIs<Marker.SingleMarker>(marker) }
+    }
+
+    @Test
+    fun `클러스터 위치는 포함 가게 좌표의 평균이다`() {
+        // given
+        val firstShop = shopAt(id = "1", lat = 37.501, lng = 126.901)
+        val secondShop = shopAt(id = "2", lat = 37.503, lng = 126.903)
+
+        // when
+        val marker = clusterOf(firstShop, secondShop)
+
+        // then
+        assertEquals(37.502, marker.location.lat, DOUBLE_TOLERANCE)
+        assertEquals(126.902, marker.location.lng, DOUBLE_TOLERANCE)
+    }
+
+    private fun clusterOf(
+        firstShop: RamenShop,
+        secondShop: RamenShop,
+    ): Marker.ClusterMaker =
+        assertIs(
+            markerCluster
+                .clustering(
+                    shops = ramenShopsOf(firstShop, secondShop),
+                    bounds = BOUNDS_FIXTURE,
+                    viewportWidth = VIEWPORT_SIZE,
+                    viewportHeight = VIEWPORT_SIZE,
+                ).single(),
+        )
+
+    private fun ramenShopsOf(vararg shops: RamenShop): RamenShops =
+        RamenShops(
+            shops.associateBy { shop -> shop.id },
+        )
+
+    private fun shopAt(
+        id: String,
+        lat: Double,
+        lng: Double,
+    ): RamenShop =
+        ramenShopFixture(
+            id = id,
+            location = Location(lat = lat, lng = lng),
+        )
+
+    companion object {
+        private const val VIEWPORT_SIZE = 1000
+        private const val DOUBLE_TOLERANCE = 0.000001
+    }
+}
