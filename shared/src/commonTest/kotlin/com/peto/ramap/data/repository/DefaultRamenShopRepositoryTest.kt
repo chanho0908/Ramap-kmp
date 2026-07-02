@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
+import com.peto.ramap.domain.model.MenuCategories
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.fake.FakeRamenShopDataSource
@@ -57,7 +58,7 @@ class DefaultRamenShopRepositoryTest {
                         businessHours = "11:00-21:00",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         kakaoRating = 4.5,
-                        menuCategories = listOf(Category.SHOYU, Category.TONKOTSU),
+                        menuCategories = MenuCategories(listOf(Category.SHOYU, Category.TONKOTSU)),
                         isVisible = true,
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",
@@ -73,13 +74,13 @@ class DefaultRamenShopRepositoryTest {
                         businessHours = null,
                         instagramUrl = null,
                         kakaoRating = null,
-                        menuCategories = emptyList(),
+                        menuCategories = MenuCategories(emptyList()),
                         isVisible = false,
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",
                     ),
                 ).associateBy { it.id },
-                result.value,
+                result.toMap(),
             )
         }
 
@@ -93,7 +94,7 @@ class DefaultRamenShopRepositoryTest {
 
             val result = repository.fetchRamenShops(BOUNDS_FIXTURE)
 
-            assertEquals(emptyMap(), result.value)
+            assertEquals(emptyMap(), result.toMap())
         }
 
     @Test
@@ -137,7 +138,7 @@ class DefaultRamenShopRepositoryTest {
                         businessHours = "11:00-21:00",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         kakaoRating = 4.5,
-                        menuCategories = listOf(Category.SHIO),
+                        menuCategories = MenuCategories(listOf(Category.SHIO)),
                         isVisible = true,
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",
@@ -153,13 +154,13 @@ class DefaultRamenShopRepositoryTest {
                         businessHours = "11:00-21:00",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         kakaoRating = 4.5,
-                        menuCategories = emptyList(),
+                        menuCategories = MenuCategories(emptyList()),
                         isVisible = false,
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",
                     ),
                 ).associateBy { it.id },
-                result.value,
+                result.toMap(),
             )
         }
 
@@ -173,6 +174,6 @@ class DefaultRamenShopRepositoryTest {
 
             val result = repository.searchRamenShops(SearchQuery("없음"), limit = 5)
 
-            assertEquals(emptyMap(), result.value)
+            assertEquals(emptyMap(), result.toMap())
         }
 }

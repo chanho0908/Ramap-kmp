@@ -2,6 +2,7 @@ package com.peto.ramap.data.model
 
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
+import com.peto.ramap.domain.model.MenuCategories
 import com.peto.ramap.domain.model.RamenShop
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -45,7 +46,7 @@ data class RamenShopResponse(
             businessHours = businessHours,
             instagramUrl = instagramUrl,
             kakaoRating = kakaoRating,
-            menuCategories = menuCategoryIds.orEmpty().mapNotNull(Category::fromId),
+            menuCategories = MenuCategories(menuCategoryIds.orEmpty().mapNotNull(Category::fromId)),
             isVisible = isVisible ?: false,
             createdAt = createdAt,
             updatedAt = updatedAt,

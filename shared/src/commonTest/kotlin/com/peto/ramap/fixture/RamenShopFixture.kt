@@ -2,6 +2,7 @@ package com.peto.ramap.fixture
 
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
+import com.peto.ramap.domain.model.MenuCategories
 import com.peto.ramap.domain.model.RamenShop
 
 fun ramenShopFixture(
@@ -31,7 +32,7 @@ fun ramenShopFixture(
         businessHours = businessHours,
         instagramUrl = instagramUrl,
         kakaoRating = kakaoRating,
-        menuCategories = menuCategories,
+        menuCategories = MenuCategories(menuCategories),
         isVisible = isVisible,
         createdAt = createdAt,
         updatedAt = updatedAt,

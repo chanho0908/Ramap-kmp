@@ -13,11 +13,10 @@ class RamenShopsTest {
         val renderedShopIds = mutableSetOf("1")
         val shops =
             RamenShops(
-                value =
-                    mapOf(
-                        "1" to ramenShopFixture(id = "1", name = "이미 렌더링된 가게"),
-                        "2" to ramenShopFixture(id = "2", name = "새로운 가게"),
-                    ),
+                mapOf(
+                    "1" to ramenShopFixture(id = "1", name = "이미 렌더링된 가게"),
+                    "2" to ramenShopFixture(id = "2", name = "새로운 가게"),
+                ),
             )
 
         // when
@@ -32,19 +31,18 @@ class RamenShopsTest {
         // given
         val shops =
             RamenShops(
-                value =
-                    mapOf(
-                        "1" to
-                            ramenShopFixture(
-                                id = "1",
-                                menuCategories = listOf(Category.MAZESOBA),
-                            ),
-                        "2" to
-                            ramenShopFixture(
-                                id = "2",
-                                menuCategories = listOf(Category.JIRO),
-                            ),
-                    ),
+                mapOf(
+                    "1" to
+                        ramenShopFixture(
+                            id = "1",
+                            menuCategories = listOf(Category.MAZESOBA),
+                        ),
+                    "2" to
+                        ramenShopFixture(
+                            id = "2",
+                            menuCategories = listOf(Category.JIRO),
+                        ),
+                ),
             )
 
         // when
@@ -59,24 +57,23 @@ class RamenShopsTest {
         // given
         val shops =
             RamenShops(
-                value =
-                    mapOf(
-                        "1" to
-                            ramenShopFixture(
-                                id = "1",
-                                menuCategories = listOf(Category.MAZESOBA),
-                            ),
-                        "2" to
-                            ramenShopFixture(
-                                id = "2",
-                                menuCategories = listOf(Category.JIRO),
-                            ),
-                        "3" to
-                            ramenShopFixture(
-                                id = "3",
-                                menuCategories = emptyList(),
-                            ),
-                    ),
+                mapOf(
+                    "1" to
+                        ramenShopFixture(
+                            id = "1",
+                            menuCategories = listOf(Category.MAZESOBA),
+                        ),
+                    "2" to
+                        ramenShopFixture(
+                            id = "2",
+                            menuCategories = listOf(Category.JIRO),
+                        ),
+                    "3" to
+                        ramenShopFixture(
+                            id = "3",
+                            menuCategories = emptyList(),
+                        ),
+                ),
             )
         val filter = RamenShopFilter(setOf(Category.MAZESOBA))
 
@@ -84,7 +81,7 @@ class RamenShopsTest {
         val result = shops.filterByCategory(filter)
 
         // then
-        assertEquals(setOf("1"), result.value.keys)
+        assertEquals(setOf("1"), result.keys)
     }
 
     @Test
@@ -92,19 +89,18 @@ class RamenShopsTest {
         // given
         val shops =
             RamenShops(
-                value =
-                    mapOf(
-                        "1" to
-                            ramenShopFixture(
-                                id = "1",
-                                menuCategories = listOf(Category.MAZESOBA, Category.JIRO),
-                            ),
-                        "2" to
-                            ramenShopFixture(
-                                id = "2",
-                                menuCategories = emptyList(),
-                            ),
-                    ),
+                mapOf(
+                    "1" to
+                        ramenShopFixture(
+                            id = "1",
+                            menuCategories = listOf(Category.MAZESOBA, Category.JIRO),
+                        ),
+                    "2" to
+                        ramenShopFixture(
+                            id = "2",
+                            menuCategories = emptyList(),
+                        ),
+                ),
             )
         val filter = RamenShopFilter(setOf(Category.JIRO))
 
@@ -112,7 +108,7 @@ class RamenShopsTest {
         val result = shops.filterByCategory(filter)
 
         // then
-        assertTrue("1" in result.value.keys)
-        assertFalse("2" in result.value.keys)
+        assertTrue("1" in result.keys)
+        assertFalse("2" in result.keys)
     }
 }

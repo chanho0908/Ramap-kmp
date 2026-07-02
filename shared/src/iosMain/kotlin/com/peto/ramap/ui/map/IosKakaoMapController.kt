@@ -287,11 +287,11 @@ class IosKakaoMapController(
 
         removeStaleMarkers(
             layer = layer,
-            currentShopIds = shops.value.keys,
+            currentShopIds = shops.keys,
         )
         renderNewMarkers(
             layer = layer,
-            shops = shops.value.values.toList(),
+            shops = shops.values.toList(),
         )
     }
 

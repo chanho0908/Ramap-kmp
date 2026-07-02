@@ -11,11 +11,10 @@ class DefaultRamenShopRepository(
 ) : RamenShopRepository {
     override suspend fun fetchRamenShops(bounds: MapBounds): RamenShops =
         RamenShops(
-            value =
-                dataSource
-                    .fetchRamenShops(bounds)
-                    .map { it.toDomain() }
-                    .associateBy { it.id },
+            dataSource
+                .fetchRamenShops(bounds)
+                .map { it.toDomain() }
+                .associateBy { it.id },
         )
 
     override suspend fun searchRamenShops(
@@ -23,10 +22,9 @@ class DefaultRamenShopRepository(
         limit: Int,
     ): RamenShops =
         RamenShops(
-            value =
-                dataSource
-                    .searchRamenShops(query, limit)
-                    .map { it.toDomain() }
-                    .associateBy { it.id },
+            dataSource
+                .searchRamenShops(query, limit)
+                .map { it.toDomain() }
+                .associateBy { it.id },
         )
 }
